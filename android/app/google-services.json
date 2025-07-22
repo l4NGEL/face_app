@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "219754101648",
+    "project_id": "my-faceapp-27f63",
+    "storage_bucket": "my-faceapp-27f63.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:219754101648:android:dbf097eebbd699aada5115",
+        "android_client_info": {
+          "package_name": "com.example.my_faceapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWJtRV7yBtxGs0VrwHA6OvrW1bSh9jXHM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
