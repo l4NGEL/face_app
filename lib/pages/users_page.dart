@@ -8,79 +8,72 @@ class UsersPage extends StatefulWidget {
 
 class _UsersPageState extends State<UsersPage> {
   List<dynamic> users = [];
-  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchUsers();
+    loadUsers();
   }
 
-  Future<void> fetchUsers() async {
-    setState(() { isLoading = true; });
+  Future<void> loadUsers() async {
     try {
-      users = await FaceApiService.listUsers();
+      final response = await FaceApiService.listUsers();
+      setState(() {
+        users = response;
+      });
     } catch (e) {
-      users = [];
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Kullanıcılar alınamadı: $e')),
-      );
+      print("Kullanıcılar yüklenemedi: $e");
     }
-    setState(() { isLoading = false; });
   }
 
-  Future<void> deleteUser(String idNo) async {
-    final result = await FaceApiService.deleteUser(idNo);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(result['message'] ?? 'Kullanıcı silindi')),
+  void showFullImage(String userId) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: Container(
+          padding: EdgeInsets.all(8),
+          child: Image.network(
+            'http://10.0.2.2:5000/known_faces/$userId/1.jpg',
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
     );
-    await fetchUsers();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Kullanıcılar')),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : users.isEmpty
-              ? Center(child: Text('Kayıtlı kullanıcı yok.'))
-              : ListView.builder(
-                  itemCount: users.length,
-                  itemBuilder: (context, index) {
-                    final user = users[index];
-                    return ListTile(
-                      title: Text(user['name'] ?? ''),
-                      subtitle: Text('Kimlik No: ${user['id_no'] ?? ''}\nDoğum Tarihi: ${user['birth_date'] ?? ''}'),
-                      isThreeLine: true,
-                      trailing: IconButton(
-                        icon: Icon(Icons.delete, color: Colors.red),
-                        onPressed: () async {
-                          final confirm = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: Text('Kullanıcıyı Sil'),
-                              content: Text('Bu kullanıcıyı silmek istediğinize emin misiniz?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, false),
-                                  child: Text('İptal'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context, true),
-                                  child: Text('Sil'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirm == true) {
-                            await deleteUser(user['id']);
-                          }
-                        },
-                      ),
-                    );
-                  },
+      appBar: AppBar(title: Text('Tanınan Kullanıcılar')),
+      body: ListView.builder(
+        itemCount: users.length,
+        itemBuilder: (context, index) {
+          final user = users[index];
+          final name = user['name'] ?? '';
+          final idNo = user['id_no'] ?? '-';
+          final birthDate = user['birth_date'] ?? '-';
+          final userId = user['id'];
+
+          return ListTile(
+            leading: GestureDetector(
+              onTap: () => showFullImage(userId),
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(
+                  'http://10.0.2.2:5000/known_faces/$userId/1.jpg',
                 ),
+              ),
+            ),
+            title: Text(name),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Kimlik No: $idNo'),
+                Text('Doğum Tarihi: $birthDate'),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
-} 
+}

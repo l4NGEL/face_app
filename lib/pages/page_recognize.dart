@@ -5,12 +5,14 @@ import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/face_api_services.dart';
 
-class FaceRecognitionPage extends StatefulWidget {
+class PageRecognize extends StatefulWidget {
+  const PageRecognize({super.key});
+
   @override
-  State<FaceRecognitionPage> createState() => _FaceRecognitionPageState();
+  State<PageRecognize> createState() => _PageRecognizeState();
 }
 
-class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
+class _PageRecognizeState extends State<PageRecognize> {
   CameraController? _controller;
   List<CameraDescription>? cameras;
   String? resultMessage;
@@ -37,7 +39,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   }
 
   void _startRecognitionLoop() {
-    _timer = Timer.periodic(Duration(seconds: 2), (_) => _captureAndRecognize());
+    _timer = Timer.periodic(const Duration(seconds: 2), (_) => _captureAndRecognize());
   }
 
   Future<void> _captureAndRecognize() async {
@@ -77,12 +79,12 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Tanınmayan Kişi'),
-        content: Text('Bu kişi sistemde kayıtlı değil. Sisteme kaydetmelisiniz.'),
+        title: const Text('Tanınmayan Kişi'),
+        content: const Text('Bu kişi sistemde kayıtlı değil. Sisteme kaydetmelisiniz.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Tamam'),
+            child: const Text('Tamam'),
           ),
         ],
       ),
@@ -98,20 +100,26 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Gerçek Zamanlı Yüz Tanıma")),
-      body: _controller == null || !_controller!.value.isInitialized
-          ? Center(child: CircularProgressIndicator())
-          : Stack(
+    return _controller == null || !_controller!.value.isInitialized
+        ? const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    )
+        : Scaffold(
+      body: Stack(
         children: [
-          CameraPreview(_controller!),
+          // 🔴 Kamera tüm ekranı kaplasın
+          SizedBox.expand(
+            child: CameraPreview(_controller!),
+          ),
+
+          // 🟡 Alt bilgi kutusu
           Positioned(
-            bottom: 32,
+            bottom: 0,
             left: 0,
             right: 0,
             child: Container(
-              color: Colors.black54,
-              padding: EdgeInsets.all(16),
+              color: Colors.black.withOpacity(0.6),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -120,16 +128,19 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
                       resultMessage!,
                       style: TextStyle(
                         fontSize: 20,
-                        color: recognizedName != null ? Colors.green : Colors.red,
+                        color: recognizedName != null ? Colors.greenAccent : Colors.redAccent,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   if (recognizedName != null)
                     Column(
                       children: [
-                        Text("Adı: $recognizedName", style: TextStyle(fontSize: 18, color: Colors.white)),
-                        if (idNo != null) Text("Kimlik No: $idNo", style: TextStyle(color: Colors.white)),
-                        if (birthDate != null) Text("Doğum Tarihi: $birthDate", style: TextStyle(color: Colors.white)),
+                        const SizedBox(height: 8),
+                        Text("Adı: $recognizedName", style: const TextStyle(fontSize: 16, color: Colors.white)),
+                        if (idNo != null)
+                          Text("Kimlik No: $idNo", style: const TextStyle(color: Colors.white)),
+                        if (birthDate != null)
+                          Text("Doğum Tarihi: $birthDate", style: const TextStyle(color: Colors.white)),
                       ],
                     ),
                 ],

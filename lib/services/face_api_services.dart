@@ -34,7 +34,7 @@ class FaceApiService {
 
   static Future<List<dynamic>> listUsers() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/list_users'),
+      Uri.parse('$baseUrl/users'),
       headers: {'Content-Type': 'application/json'},
     );
     if (response.statusCode == 200) {
