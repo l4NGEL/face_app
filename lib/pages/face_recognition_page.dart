@@ -5,14 +5,12 @@ import 'package:camera/camera.dart';
 import 'package:path_provider/path_provider.dart';
 import '../services/face_api_services.dart';
 
-class PageRecognize extends StatefulWidget {
-  const PageRecognize({super.key});
-
+class FaceRecognitionPage extends StatefulWidget {
   @override
-  State<PageRecognize> createState() => _PageRecognizeState();
+  State<FaceRecognitionPage> createState() => _FaceRecognitionPageState();
 }
 
-class _PageRecognizeState extends State<PageRecognize> {
+class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   CameraController? _controller;
   List<CameraDescription>? cameras;
   String? resultMessage;
@@ -31,7 +29,11 @@ class _PageRecognizeState extends State<PageRecognize> {
   Future<void> _initCamera() async {
     cameras = await availableCameras();
     if (cameras != null && cameras!.isNotEmpty) {
-      _controller = CameraController(cameras![0], ResolutionPreset.medium);
+      final frontCamera = cameras!.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.front,
+        orElse: () => cameras![0],
+      );
+      _controller = CameraController(frontCamera, ResolutionPreset.medium);
       await _controller!.initialize();
       setState(() {});
       _startRecognitionLoop();
@@ -39,7 +41,7 @@ class _PageRecognizeState extends State<PageRecognize> {
   }
 
   void _startRecognitionLoop() {
-    _timer = Timer.periodic(const Duration(seconds: 2), (_) => _captureAndRecognize());
+    _timer = Timer.periodic(Duration(seconds: 2), (_) => _captureAndRecognize());
   }
 
   Future<void> _captureAndRecognize() async {
@@ -79,12 +81,12 @@ class _PageRecognizeState extends State<PageRecognize> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Tanınmayan Kişi'),
-        content: const Text('Bu kişi sistemde kayıtlı değil. Sisteme kaydetmelisiniz.'),
+        title: Text('Tanınmayan Kişi'),
+        content: Text('Bu kişi sistemde kayıtlı değil. Sisteme kaydetmelisiniz.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Tamam'),
+            child: Text('Tamam'),
           ),
         ],
       ),
@@ -100,26 +102,20 @@ class _PageRecognizeState extends State<PageRecognize> {
 
   @override
   Widget build(BuildContext context) {
-    return _controller == null || !_controller!.value.isInitialized
-        ? const Scaffold(
-      body: Center(child: CircularProgressIndicator()),
-    )
-        : Scaffold(
-      body: Stack(
+    return Scaffold(
+      appBar: AppBar(title: Text("Gerçek Zamanlı Yüz Tanıma")),
+      body: _controller == null || !_controller!.value.isInitialized
+          ? Center(child: CircularProgressIndicator())
+          : Stack(
         children: [
-          // 🔴 Kamera tüm ekranı kaplasın
-          SizedBox.expand(
-            child: CameraPreview(_controller!),
-          ),
-
-          // 🟡 Alt bilgi kutusu
+          CameraPreview(_controller!),
           Positioned(
-            bottom: 0,
+            bottom: 32,
             left: 0,
             right: 0,
             child: Container(
-              color: Colors.black.withOpacity(0.6),
-              padding: const EdgeInsets.all(16),
+              color: Colors.black54,
+              padding: EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -128,19 +124,16 @@ class _PageRecognizeState extends State<PageRecognize> {
                       resultMessage!,
                       style: TextStyle(
                         fontSize: 20,
-                        color: recognizedName != null ? Colors.greenAccent : Colors.redAccent,
+                        color: recognizedName != null ? Colors.green : Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                   if (recognizedName != null)
                     Column(
                       children: [
-                        const SizedBox(height: 8),
-                        Text("Adı: $recognizedName", style: const TextStyle(fontSize: 16, color: Colors.white)),
-                        if (idNo != null)
-                          Text("Kimlik No: $idNo", style: const TextStyle(color: Colors.white)),
-                        if (birthDate != null)
-                          Text("Doğum Tarihi: $birthDate", style: const TextStyle(color: Colors.white)),
+                        Text("Adı: $recognizedName", style: TextStyle(fontSize: 18, color: Colors.white)),
+                        if (idNo != null) Text("Kimlik No: $idNo", style: TextStyle(color: Colors.white)),
+                        if (birthDate != null) Text("Doğum Tarihi: $birthDate", style: TextStyle(color: Colors.white)),
                       ],
                     ),
                 ],

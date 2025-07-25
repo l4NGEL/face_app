@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 
 class FaceApiService {
-  static const String baseUrl = 'http://10.0.2.2:5000';// API adresini güncelle!
+  static const String baseUrl = 'http://10.6.2.63:5000';// API adresini güncelle!
 
   static Future<Map<String, dynamic>> recognizeFace(File imageFile) async {
     final imageBase64 = await compressAndEncodeImage(imageFile);
@@ -41,6 +41,18 @@ class FaceApiService {
       return json.decode(response.body)['users'] ?? [];
     } else {
       throw Exception('Kullanıcılar alınamadı');
+    }
+  }
+
+  static Future<List<dynamic>> getUserLogs(String userId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/user_logs/$userId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['logs'] ?? [];
+    } else {
+      throw Exception('Loglar alınamadı');
     }
   }
 
