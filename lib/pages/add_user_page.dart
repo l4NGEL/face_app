@@ -59,17 +59,19 @@ class _AddUserPageState extends State<AddUserPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tüm alanları doldurun ve en az 1 fotoğraf çekin!')));
       return;
     }
-    // Fotoğrafları base64 string listesine çevir
+
     List<String> imagesBase64 = [];
     for (var file in faceImages) {
       imagesBase64.add(await FaceApiService.compressAndEncodeImage(file));
     }
+
     final result = await FaceApiService.addUser(
       nameController.text,
       idNoController.text,
       birthDateController.text,
-      imagesBase64, // Artık List<String>
+      imagesBase64,
     );
+
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? 'Kayıt tamamlandı')));
     if (result['success'] == true) {
       Navigator.pop(context);
@@ -112,9 +114,20 @@ class _AddUserPageState extends State<AddUserPage> {
               ),
             ),
             if (_controller != null && _controller!.value.isInitialized)
-              AspectRatio(
-                aspectRatio: _controller!.value.aspectRatio,
-                child: CameraPreview(_controller!),
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                width: double.infinity,
+                height: MediaQuery.of(context).size.height * 0.5, // Daha büyük kamera alanı
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.black,
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationY(3.14159),
+                  child: CameraPreview(_controller!),
+                ),
               ),
             SizedBox(height: 8),
             Text('Yüz fotoğrafı çekin (en az 1, en fazla 5): $faceCount / 5'),
@@ -123,7 +136,13 @@ class _AddUserPageState extends State<AddUserPage> {
               children: [
                 ElevatedButton(
                   onPressed: (!isCapturing && faceCount < 5) ? _captureMultipleFaces : null,
-                  child: isCapturing ? Row(children:[SizedBox(width:16,height:16,child:CircularProgressIndicator(strokeWidth:2)),SizedBox(width:8),Text('Çekiliyor...')]) : Text('Görüntü Al (5 Fotoğraf)'),
+                  child: isCapturing
+                      ? Row(children: [
+                    SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                    SizedBox(width: 8),
+                    Text('Çekiliyor...')
+                  ])
+                      : Text('Görüntü Al (5 Fotoğraf)'),
                 ),
                 SizedBox(width: 16),
                 ElevatedButton(

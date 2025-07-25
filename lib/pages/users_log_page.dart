@@ -1,11 +1,9 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import '../services/face_api_services.dart';
 
 class UsersPage extends StatefulWidget {
   @override
-  State<UsersPage> createState() => _UsersPageState();
+  _UsersPageState createState() => _UsersPageState();
 }
 
 class _UsersPageState extends State<UsersPage> {
@@ -39,58 +37,40 @@ class _UsersPageState extends State<UsersPage> {
     await fetchUsers();
   }
 
-  Future<void> showUserLogs(String userId) async {
-    List<dynamic> logs = [];
-    bool error = false;
-    try {
-      logs = await FaceApiService.getUserLogs(userId);
-    } catch (e) {
-      error = true;
-    }
+  void showProfilePhoto(String idNo) {
+    final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/1.jpg';
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: Text('Yüz Tanıma Logları'),
-        content: error
-            ? Text('Loglar alınamadı.')
-            : (logs.isEmpty
-                ? Text('Log bulunamadı.')
-                : SizedBox(
-                    width: 300,
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: (List.from(logs)
-                        ..sort((a, b) => (b['date'] ?? '').compareTo(a['date'] ?? '')))
-                        .map((log) => ListTile(
-                          leading: (log['action'] == 'tanıma' && log['image'] != null && log['image'].toString().isNotEmpty)
-                              ? CircleAvatar(
-                                  backgroundImage: MemoryImage(
-                                    base64Decode(
-                                      log['image'].split(',').length > 1
-                                        ? log['image'].split(',')[1]
-                                        : log['image'],
-                                    ),
-                                  ),
-                                )
-                              : CircleAvatar(child: Icon(Icons.person)),
-                          title: Text(
-                            (log['action'] == 'kayıt'
-                              ? 'Kullanıcı kaydedildi'
-                              : log['action'] == 'tanıma'
-                                ? 'Tanıma yapıldı'
-                                : 'İşlem: ${log['action'] ?? '-'}') +
-                            (log['name'] != null ? ' - ${log['name']}' : ''),
-                          ),
-                          subtitle: Text('Tarih: ${log['date'] ?? '-'}'),
-                        )).toList(),
-                    ),
-                  )),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Kapat'),
+      builder: (_) => Dialog(
+        child: InteractiveViewer(
+          child: Image.network(photoUrl, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+
+  void showProfileGallery(String idNo) {
+    final List<String> photoUrls = List.generate(
+      5,
+      (i) => '${FaceApiService.baseUrl}/user_photo/$idNo/${i + 1}.jpg',
+    );
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        child: SizedBox(
+          width: 320,
+          height: 400,
+          child: PageView.builder(
+            itemCount: photoUrls.length,
+            itemBuilder: (context, index) {
+              return Image.network(
+                photoUrls[index],
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) => Center(child: Text('Fotoğraf yok')),
+              );
+            },
           ),
-        ],
+        ),
       ),
     );
   }
@@ -107,7 +87,18 @@ class _UsersPageState extends State<UsersPage> {
         itemCount: users.length,
         itemBuilder: (context, index) {
           final user = users[index];
+          final idNo = user['id_no'] ?? user['id'];
+          final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/1.jpg';
           return ListTile(
+            leading: GestureDetector(
+              onTap: () => showProfileGallery(idNo),
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(photoUrl),
+                radius: 28,
+                onBackgroundImageError: (_, __) {},
+                child: Icon(Icons.person),
+              ),
+            ),
             title: Text(user['name'] ?? ''),
             subtitle: Text('Kimlik No: ${user['id_no'] ?? ''}\nDoğum Tarihi: ${user['birth_date'] ?? ''}'),
             isThreeLine: true,
@@ -132,11 +123,10 @@ class _UsersPageState extends State<UsersPage> {
                   ),
                 );
                 if (confirm == true) {
-                  await deleteUser(user['id']);
+                  await deleteUser(idNo);
                 }
               },
             ),
-            onTap: () => showUserLogs(user['id']),
           );
         },
       ),

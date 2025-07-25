@@ -65,9 +65,10 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
         }
       });
 
-      if (result['recognized'] != true) {
-        _showNotRecognizedDialog();
-      }
+      // AlertDialog kaldırıldı
+      // if (result['recognized'] != true) {
+      //   _showNotRecognizedDialog();
+      // }
     } catch (e) {
       setState(() {
         resultMessage = "Hata: $e";
@@ -77,21 +78,22 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
     _isProcessing = false;
   }
 
-  void _showNotRecognizedDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Tanınmayan Kişi'),
-        content: Text('Bu kişi sistemde kayıtlı değil. Sisteme kaydetmelisiniz.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Tamam'),
-          ),
-        ],
-      ),
-    );
-  }
+  // AlertDialog fonksiyonu kaldırıldı
+  // void _showNotRecognizedDialog() {
+  //   showDialog(
+  //     context: context,
+  //     builder: (context) => AlertDialog(
+  //       title: Text('Tanınmayan Kişi'),
+  //       content: Text('Bu kişi sistemde kayıtlı değil. Sisteme kaydetmelisiniz.'),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: Text('Tamam'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   @override
   void dispose() {
@@ -103,45 +105,86 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Gerçek Zamanlı Yüz Tanıma")),
       body: _controller == null || !_controller!.value.isInitialized
           ? Center(child: CircularProgressIndicator())
           : Stack(
-        children: [
-          CameraPreview(_controller!),
-          Positioned(
-            bottom: 32,
-            left: 0,
-            right: 0,
-            child: Container(
-              color: Colors.black54,
-              padding: EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (resultMessage != null)
-                    Text(
-                      resultMessage!,
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: recognizedName != null ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.bold,
+              fit: StackFit.expand,
+              children: [
+                CameraPreview(_controller!),
+                // Bilgi kutusu üstte, gölgeli ve yarı saydam
+                if (resultMessage != null)
+                  Align(
+                    alignment: Alignment.topCenter,
+                    child: Container(
+                      margin: EdgeInsets.only(top: 24, left: 16, right: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      padding: EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            resultMessage!,
+                            style: TextStyle(
+                              fontSize: 20,
+                              color: recognizedName != null ? Colors.greenAccent : Colors.redAccent,
+                              fontWeight: FontWeight.bold,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black,
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (recognizedName != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("Adı: $recognizedName", style: TextStyle(fontSize: 18, color: Colors.white)),
+                                  if (idNo != null) Text("Kimlik No: $idNo", style: TextStyle(color: Colors.white)),
+                                  if (birthDate != null) Text("Doğum Tarihi: $birthDate", style: TextStyle(color: Colors.white)),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  if (recognizedName != null)
-                    Column(
-                      children: [
-                        Text("Adı: $recognizedName", style: TextStyle(fontSize: 18, color: Colors.white)),
-                        if (idNo != null) Text("Kimlik No: $idNo", style: TextStyle(color: Colors.white)),
-                        if (birthDate != null) Text("Doğum Tarihi: $birthDate", style: TextStyle(color: Colors.white)),
-                      ],
+                  ),
+                // Sol üstte geri butonu
+                Positioned(
+                  top: 24,
+                  left: 16,
+                  child: SafeArea(
+                    child: ClipOval(
+                      child: Material(
+                        color: Colors.black.withOpacity(0.4),
+                        child: InkWell(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                          ),
+                        ),
+                      ),
                     ),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 }
