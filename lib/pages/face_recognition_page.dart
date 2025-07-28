@@ -23,6 +23,9 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   // Gerçek zamanlı tanıma kayıtları
   List<Map<String, dynamic>> _realtimeLogs = [];
   Timer? _logsTimer;
+  
+  // Tanınanlar listesi görünürlük kontrolü
+  bool _isRecognizedListVisible = true;
 
   @override
   void initState() {
@@ -63,8 +66,20 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
         (camera) => camera.lensDirection == CameraLensDirection.front,
         orElse: () => cameras![0],
       );
-      _controller = CameraController(frontCamera, ResolutionPreset.medium);
+      
+      // Kamera oryantasyonunu sabit tutmak için
+      _controller = CameraController(
+        frontCamera, 
+        ResolutionPreset.medium,
+        enableAudio: false, // Ses kapalı
+        imageFormatGroup: ImageFormatGroup.jpeg,
+      );
+      
       await _controller!.initialize();
+      
+      // Kamera oryantasyonunu sabit tut
+      await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      
       setState(() {});
       _startRecognitionLoop();
     }
@@ -137,6 +152,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   void dispose() {
     _timer?.cancel();
     _logsTimer?.cancel();
+    _controller?.unlockCaptureOrientation();
     _controller?.dispose();
     super.dispose();
   }
@@ -153,94 +169,155 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _controller == null || !_controller!.value.isInitialized
-          ? Center(child: CircularProgressIndicator())
-          : Stack(
-              fit: StackFit.expand,
-              children: [
-                CameraPreview(_controller!),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isLandscape = constraints.maxWidth > constraints.maxHeight;
+          
+          return _controller == null || !_controller!.value.isInitialized
+              ? Center(child: CircularProgressIndicator())
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Kamera önizlemesi - oryantasyon sabit
+                    Transform.scale(
+                      scale: isLandscape ? 1.2 : 1.0,
+                      child: Center(
+                        child: AspectRatio(
+                          aspectRatio: 1 / _controller!.value.aspectRatio,
+                          child: CameraPreview(_controller!),
+                        ),
+                      ),
+                    ),
                 
-                // Gerçek zamanlı tanıma kayıtları - sağ tarafta
+                // Gerçek zamanlı tanıma kayıtları - sağ alt köşede (açılır/kapanır)
                 if (_realtimeLogs.isNotEmpty)
                   Positioned(
-                    top: 100,
-                    right: 16,
-                    child: Container(
-                      width: 280,
-                      height: 400,
+                    bottom: isLandscape ? 24 : 16,
+                    right: isLandscape ? 24 : 16,
+                    child: AnimatedContainer(
+                      duration: Duration(milliseconds: 300),
+                      width: _isRecognizedListVisible 
+                          ? (isLandscape ? 320 : 280) 
+                          : (isLandscape ? 100 : 80),
+                      height: _isRecognizedListVisible 
+                          ? (isLandscape ? 250 : 300) 
+                          : (isLandscape ? 100 : 90),
                       decoration: BoxDecoration(
                         color: Colors.black.withOpacity(0.8),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.greenAccent, width: 2),
                       ),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.greenAccent.withOpacity(0.2),
-                              borderRadius: BorderRadius.only(
-                                topLeft: Radius.circular(14),
-                                topRight: Radius.circular(14),
-                              ),
-                            ),
-                            child: Row(
+                      child: _isRecognizedListVisible
+                          ? Column(
                               children: [
-                                Icon(Icons.people, color: Colors.greenAccent, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Tanınan Kişiler (${_realtimeLogs.length})",
-                                  style: TextStyle(
-                                    color: Colors.greenAccent,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: ListView.builder(
-                              padding: EdgeInsets.all(8),
-                              itemCount: _realtimeLogs.length,
-                              itemBuilder: (context, index) {
-                                final log = _realtimeLogs[index];
-                                return Container(
-                                  margin: EdgeInsets.only(bottom: 8),
-                                  padding: EdgeInsets.all(8),
+                                Container(
+                                  padding: EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                                    color: Colors.greenAccent.withOpacity(0.2),
+                                    borderRadius: BorderRadius.only(
+                                      topLeft: Radius.circular(14),
+                                      topRight: Radius.circular(14),
+                                    ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                  child: Row(
                                     children: [
-                                      Text(
-                                        log['name'] ?? 'Bilinmeyen',
-                                        style: TextStyle(
-                                          color: Colors.greenAccent,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
+                                      Icon(Icons.people, color: Colors.greenAccent, size: 20),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          "Tanınan Kişiler (${_realtimeLogs.length})",
+                                          style: TextStyle(
+                                            color: Colors.greenAccent,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
                                         ),
                                       ),
-                                      SizedBox(height: 4),
-                                      Text(
-                                        "Kimlik: ${log['id_no'] ?? 'N/A'}",
-                                        style: TextStyle(color: Colors.white, fontSize: 12),
-                                      ),
-                                      Text(
-                                        "Tarih: ${_formatDateTime(log['timestamp'])}",
-                                        style: TextStyle(color: Colors.white70, fontSize: 11),
+                                      GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _isRecognizedListVisible = false;
+                                          });
+                                        },
+                                        child: Icon(
+                                          Icons.keyboard_arrow_right,
+                                          color: Colors.greenAccent,
+                                          size: 24,
+                                        ),
                                       ),
                                     ],
                                   ),
-                                );
+                                ),
+                                Expanded(
+                                  child: ListView.builder(
+                                    padding: EdgeInsets.all(8),
+                                    itemCount: _realtimeLogs.length,
+                                    itemBuilder: (context, index) {
+                                      final log = _realtimeLogs[index];
+                                      return Container(
+                                        margin: EdgeInsets.only(bottom: 8),
+                                        padding: EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              log['name'] ?? 'Bilinmeyen',
+                                              style: TextStyle(
+                                                color: Colors.greenAccent,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                            SizedBox(height: 4),
+                                            Text(
+                                              "Kimlik: ${log['id_no'] ?? 'N/A'}",
+                                              style: TextStyle(color: Colors.white, fontSize: 12),
+                                            ),
+                                            Text(
+                                              "Tarih: ${_formatDateTime(log['timestamp'])}",
+                                              style: TextStyle(color: Colors.white70, fontSize: 11),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            )
+                          : GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _isRecognizedListVisible = true;
+                                });
                               },
+                              child: Container(
+                                padding: EdgeInsets.all(16),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.keyboard_arrow_left,
+                                      color: Colors.greenAccent,
+                                      size: 24,
+                                    ),
+                                    SizedBox(height: 4),
+                                    Text(
+                                      "${_realtimeLogs.length}",
+                                      style: TextStyle(
+                                        color: Colors.greenAccent,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 
@@ -352,7 +429,9 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
                   ),
                 ),
               ],
-            ),
+            );
+        },
+      ),
     );
   }
 }

@@ -73,60 +73,169 @@ class _UsersPageState extends State<UsersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Kullanıcılar')),
-      body: isLoading
-          ? Center(child: CircularProgressIndicator())
-          : users.isEmpty
-          ? Center(child: Text('Kayıtlı kullanıcı yok.'))
-          : ListView.builder(
-        itemCount: users.length,
-        itemBuilder: (context, index) {
-          final user = users[index];
-          final idNo = user['id_no'] ?? user['id'];
-          final photos = userPhotos[idNo] ?? [];
-          final firstPhoto = photos.isNotEmpty ? photos.first : '1.jpg';
-          final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$firstPhoto';
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isLandscape = constraints.maxWidth > constraints.maxHeight;
           
-          return ListTile(
-            leading: GestureDetector(
-              onTap: () => showProfilePhoto(idNo, firstPhoto),
-              child: CircleAvatar(
-                backgroundImage: NetworkImage(photoUrl),
-                radius: 28,
-                onBackgroundImageError: (_, __) {},
-                child: photos.isEmpty ? Icon(Icons.person) : null,
-              ),
+          if (isLoading) {
+            return Center(child: CircularProgressIndicator());
+          }
+          
+          if (users.isEmpty) {
+            return Center(child: Text('Kayıtlı kullanıcı yok.'));
+          }
+          
+          return isLandscape 
+              ? _buildLandscapeLayout(constraints)
+              : _buildPortraitLayout(constraints);
+        },
+      ),
+    );
+  }
+
+  Widget _buildPortraitLayout(BoxConstraints constraints) {
+    return ListView.builder(
+      itemCount: users.length,
+      itemBuilder: (context, index) {
+        final user = users[index];
+        final idNo = user['id_no'] ?? user['id'];
+        final photos = userPhotos[idNo] ?? [];
+        final firstPhoto = photos.isNotEmpty ? photos.first : '1.jpg';
+        final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$firstPhoto';
+        
+        return ListTile(
+          leading: GestureDetector(
+            onTap: () => showProfilePhoto(idNo, firstPhoto),
+            child: CircleAvatar(
+              backgroundImage: NetworkImage(photoUrl),
+              radius: 28,
+              onBackgroundImageError: (_, __) {},
+              child: photos.isEmpty ? Icon(Icons.person) : null,
             ),
-            title: Text(user['name'] ?? ''),
-            subtitle: Text('Kimlik No: ${user['id_no'] ?? ''}\nDoğum Tarihi: ${user['birth_date'] ?? ''}'),
-            isThreeLine: true,
-            trailing: IconButton(
-              icon: Icon(Icons.delete, color: Colors.red),
-              onPressed: () async {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text('Kullanıcıyı Sil'),
-                    content: Text('Bu kullanıcıyı silmek istediğinize emin misiniz?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text('İptal'),
+          ),
+          title: Text(user['name'] ?? ''),
+          subtitle: Text('Kimlik No: ${user['id_no'] ?? ''}\nDoğum Tarihi: ${user['birth_date'] ?? ''}'),
+          isThreeLine: true,
+          trailing: IconButton(
+            icon: Icon(Icons.delete, color: Colors.red),
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: Text('Kullanıcıyı Sil'),
+                  content: Text('Bu kullanıcıyı silmek istediğinize emin misiniz?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: Text('İptal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text('Sil'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                await deleteUser(idNo);
+              }
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLandscapeLayout(BoxConstraints constraints) {
+    return GridView.builder(
+      padding: EdgeInsets.all(16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: (constraints.maxWidth / 300).floor().clamp(2, 4),
+        childAspectRatio: 2.5,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: users.length,
+      itemBuilder: (context, index) {
+        final user = users[index];
+        final idNo = user['id_no'] ?? user['id'];
+        final photos = userPhotos[idNo] ?? [];
+        final firstPhoto = photos.isNotEmpty ? photos.first : '1.jpg';
+        final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$firstPhoto';
+        
+        return Card(
+          elevation: 4,
+          child: Padding(
+            padding: EdgeInsets.all(12),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => showProfilePhoto(idNo, firstPhoto),
+                  child: CircleAvatar(
+                    backgroundImage: NetworkImage(photoUrl),
+                    radius: 30,
+                    onBackgroundImageError: (_, __) {},
+                    child: photos.isEmpty ? Icon(Icons.person, size: 30) : null,
+                  ),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        user['name'] ?? '',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text('Sil'),
+                      SizedBox(height: 4),
+                      Text(
+                        'Kimlik No: ${user['id_no'] ?? ''}',
+                        style: TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'Doğum: ${user['birth_date'] ?? ''}',
+                        style: TextStyle(fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                );
-                if (confirm == true) {
-                  await deleteUser(idNo);
-                }
-              },
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text('Kullanıcıyı Sil'),
+                        content: Text('Bu kullanıcıyı silmek istediğinize emin misiniz?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: Text('İptal'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: Text('Sil'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (confirm == true) {
+                      await deleteUser(idNo);
+                    }
+                  },
+                ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
