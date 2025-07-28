@@ -24,10 +24,10 @@ List<Items> listOfItems = [
     "Kamera görüntüsüyle kişileri anında tanıyın. Yapay zeka ile desteklenen hızlı tanıma.",
   ),
   Items(
-    img: "assets/face3.png",
+    img: "assets/face4.png",
     title: "Doğru ve güvenli doğrulama",
     subTitle:
-    "Yüz verisiyle eşleştirme yapın. Sistem, kişileri doğru biçimde tanır ve gizliliği korur.",
+    "",
   ),
 ];
 

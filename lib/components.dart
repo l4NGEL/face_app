@@ -52,7 +52,7 @@ class _GetStartBtnState extends State<GetStartBtn> {
                     ),
                   ),
                 )
-              : Text("Get Started now", style: widget.textTheme.headlineMedium),
+              : Text("Yüz Tanıma Sistemine Giriş", style: widget.textTheme.headlineMedium),
         ),
       ),
     );
@@ -88,7 +88,7 @@ class SkipBtn extends StatelessWidget {
         onTap: onTap,
         splashColor: MyColors.btnBorderColor,
         child: Center(
-          child: Text("Skip", style: textTheme.displaySmall),
+          child: Text("İleri", style: textTheme.displaySmall),
         ),
       ),
     );

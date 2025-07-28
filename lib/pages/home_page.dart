@@ -15,9 +15,9 @@ class HomePage extends StatelessWidget {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isLandscape = constraints.maxWidth > constraints.maxHeight;
-          
+
           return Center(
-            child: isLandscape 
+            child: isLandscape
                 ? _buildLandscapeLayout(context, constraints)
                 : _buildPortraitLayout(context, constraints),
           );
@@ -32,8 +32,8 @@ class HomePage extends StatelessWidget {
       children: [
         // Üstteki Face ID logosu
         Image.asset(
-          'assets/face-id.png',
-          height: constraints.maxHeight * 0.25,
+          'assets/face3.png',
+          height: constraints.maxHeight * 0.5,
         ),
         SizedBox(height: constraints.maxHeight * 0.04),
 
@@ -78,7 +78,7 @@ class HomePage extends StatelessWidget {
           width: constraints.maxWidth * 0.7,
         ),
 
-        SizedBox(height: constraints.maxHeight * 0.06),
+        SizedBox(height: constraints.maxHeight * 0.03),
 
         // Alt logo
         Image.asset(
@@ -99,7 +99,7 @@ class HomePage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'assets/face-id.png',
+                'assets/face3.png',
                 height: constraints.maxHeight * 0.4,
               ),
               SizedBox(height: constraints.maxHeight * 0.02),
@@ -107,10 +107,11 @@ class HomePage extends StatelessWidget {
                 'assets/logo.png',
                 height: constraints.maxHeight * 0.05,
               ),
+              SizedBox(height: constraints.maxHeight * 0.1),
             ],
           ),
         ),
-        
+
         // Sağ taraf - Butonlar
         Expanded(
           flex: 3,
@@ -173,15 +174,15 @@ class HomePage extends StatelessWidget {
       width: width,
       height: 50,
       child: OutlinedButton.icon(
-        icon: Icon(icon, color: greenColor),
+        icon: Icon(icon, color: Colors.teal),
         label: Text(
           label,
-          style: TextStyle(color: greenColor, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold),
         ),
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           backgroundColor: Colors.white,
-          side: BorderSide(color: borderColor, width: 4),
+          side: BorderSide(color: Colors.teal, width: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

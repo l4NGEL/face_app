@@ -33,15 +33,75 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
     setState(() { isLoading = false; });
   }
 
-  Future<void> fetchRecognitionLogs(String userId) async {
+  Future<void> fetchRecognitionLogs(String? userId) async {
     try {
-      final logs = await FaceApiService.getRecognitionLogs(userId);
-      setState(() {
-        recognitionLogs[userId] = logs;
-      });
+      if (userId == null) {
+        // Tüm kullanıcıların loglarını çek
+        print('Tüm kullanıcıların recognition logs çekiliyor');
+        Map<String, List<dynamic>> allLogs = {};
+        
+        for (var user in users) {
+          final idNo = user['id_no'] ?? user['id'];
+          try {
+            final logs = await FaceApiService.getRecognitionLogs(idNo);
+            if (logs.isNotEmpty) {
+              allLogs[idNo] = logs;
+            }
+          } catch (e) {
+            print('Kullanıcı $idNo için log çekme hatası: $e');
+          }
+        }
+        
+        setState(() {
+          recognitionLogs = allLogs;
+        });
+        print('Toplam ${allLogs.length} kullanıcıdan log çekildi');
+      } else {
+        // Tek kullanıcının loglarını çek
+        print('Recognition logs çekiliyor: $userId');
+        final logs = await FaceApiService.getRecognitionLogs(userId);
+        print('Çekilen loglar: ${logs.length} adet');
+        setState(() {
+          recognitionLogs[userId] = logs;
+        });
+      }
     } catch (e) {
+      print('Recognition logs çekme hatası: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Tanıma kayıtları alınamadı: $e')),
+      );
+    }
+  }
+
+  Future<void> deleteRecognitionLog(String userId, String timestamp) async {
+    try {
+      // API'den silme işlemi yapılacak (henüz API endpoint'i yok)
+      // Şimdilik sadece local state'den kaldırıyoruz
+      setState(() {
+        final logs = recognitionLogs[userId] ?? [];
+        recognitionLogs[userId] = logs.where((log) => log['timestamp'] != timestamp).toList();
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Tanıma kaydı silindi'),
+          backgroundColor: Colors.green,
+          action: SnackBarAction(
+            label: 'Geri Al',
+            textColor: Colors.white,
+            onPressed: () {
+              // Geri alma işlemi için logları yeniden yükle
+              fetchRecognitionLogs(userId);
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Silme işlemi başarısız: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -64,23 +124,39 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
     }
   }
 
-  List<dynamic> getFilteredLogs(String userId) {
-    final logs = recognitionLogs[userId] ?? [];
-    if (startDate == null && endDate == null) return logs;
+  List<dynamic> getFilteredLogs(String? userId) {
+    List<dynamic> allLogs = [];
+    
+    if (userId == null) {
+      // Tüm kullanıcıların loglarını birleştir
+      recognitionLogs.forEach((userId, logs) {
+        for (var log in logs) {
+          allLogs.add({
+            ...log,
+            'user_id': userId, // Hangi kullanıcıya ait olduğunu belirt
+          });
+        }
+      });
+    } else {
+      // Tek kullanıcının logları
+      allLogs = recognitionLogs[userId] ?? [];
+    }
+    
+    if (startDate == null && endDate == null) return allLogs;
 
-    return logs.where((log) {
+    return allLogs.where((log) {
       try {
         final logDate = DateTime.parse(log['datetime']);
         bool include = true;
-        
+
         if (startDate != null) {
           include = include && logDate.isAfter(startDate!.subtract(Duration(days: 1)));
         }
-        
+
         if (endDate != null) {
           include = include && logDate.isBefore(endDate!.add(Duration(days: 1)));
         }
-        
+
         return include;
       } catch (e) {
         return false;
@@ -97,6 +173,18 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
     }
   }
 
+  String _getUserName(String userId) {
+    try {
+      final user = users.firstWhere(
+        (user) => (user['id_no'] ?? user['id']) == userId,
+        orElse: () => {'name': 'Bilinmeyen Kullanıcı'},
+      );
+      return user['name'] ?? 'Bilinmeyen Kullanıcı';
+    } catch (e) {
+      return 'Bilinmeyen Kullanıcı';
+    }
+  }
+
   void showRecognitionPhoto(String userId, String timestamp, String photoType) {
     final photoUrl = '${FaceApiService.baseUrl}/recognition_photos/$userId/$timestamp/$photoType';
     showDialog(
@@ -104,9 +192,9 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
       builder: (_) => Dialog(
         child: InteractiveViewer(
           child: Image.network(
-            photoUrl, 
+            photoUrl,
             fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => 
+            errorBuilder: (context, error, stackTrace) =>
                 Center(child: Text('Fotoğraf yüklenemedi')),
           ),
         ),
@@ -137,7 +225,7 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isLandscape = constraints.maxWidth > constraints.maxHeight;
-          
+
           return Column(
             children: [
               // Filtre bölümü
@@ -147,11 +235,11 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
                   color: Colors.grey[100],
                   border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
                 ),
-                child: isLandscape 
+                child: isLandscape
                     ? _buildLandscapeFilters()
                     : _buildPortraitFilters(),
               ),
-              
+
               // Sonuçlar bölümü
               Expanded(
                 child: isLoading
@@ -191,16 +279,15 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
             }).toList(),
           ],
           onChanged: (value) {
+            print('Kullanıcı seçildi: $value');
             setState(() {
               selectedUserId = value;
             });
-            if (value != null) {
-              fetchRecognitionLogs(value);
-            }
+            fetchRecognitionLogs(value);
           },
         ),
         SizedBox(height: 16),
-        
+
         // Tarih filtreleri
         Row(
           children: [
@@ -215,19 +302,23 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        startDate != null 
-                          ? "${startDate!.day}/${startDate!.month}/${startDate!.year}"
-                          : 'Başlangıç Tarihi',
+                      Icon(Icons.calendar_today, size: 16),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          startDate != null
+                              ? "${startDate!.day}/${startDate!.month}/${startDate!.year}"
+                              : 'Başlangıç',
+                          style: TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-            SizedBox(width: 16),
+            SizedBox(width: 8),
             Expanded(
               child: InkWell(
                 onTap: () => _selectDate(context, false),
@@ -239,12 +330,16 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.calendar_today, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        endDate != null 
-                          ? "${endDate!.day}/${endDate!.month}/${endDate!.year}"
-                          : 'Bitiş Tarihi',
+                      Icon(Icons.calendar_today, size: 16),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          endDate != null
+                              ? "${endDate!.day}/${endDate!.month}/${endDate!.year}"
+                              : 'Bitiş',
+                          style: TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ],
                   ),
@@ -283,36 +378,36 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
               }).toList(),
             ],
             onChanged: (value) {
+              print('Kullanıcı seçildi (landscape): $value');
               setState(() {
                 selectedUserId = value;
               });
-              if (value != null) {
-                fetchRecognitionLogs(value);
-              }
+              fetchRecognitionLogs(value);
             },
           ),
         ),
         SizedBox(width: 16),
-        
+
         // Tarih filtreleri
         Expanded(
           child: InkWell(
             onTap: () => _selectDate(context, true),
             child: Container(
-              padding: EdgeInsets.all(12),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 20),
-                  SizedBox(width: 8),
+                  Icon(Icons.calendar_today, size: 14),
+                  SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      startDate != null 
-                        ? "${startDate!.day}/${startDate!.month}/${startDate!.year}"
-                        : 'Başlangıç Tarihi',
+                      startDate != null
+                          ? "${startDate!.day}/${startDate!.month}/${startDate!.year}"
+                          : 'Başlangıç',
+                      style: TextStyle(fontSize: 11),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -321,25 +416,26 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
             ),
           ),
         ),
-        SizedBox(width: 16),
+        SizedBox(width: 8),
         Expanded(
           child: InkWell(
             onTap: () => _selectDate(context, false),
             child: Container(
-              padding: EdgeInsets.all(12),
+              padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.grey),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today, size: 20),
-                  SizedBox(width: 8),
+                  Icon(Icons.calendar_today, size: 14),
+                  SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      endDate != null 
-                        ? "${endDate!.day}/${endDate!.month}/${endDate!.year}"
-                        : 'Bitiş Tarihi',
+                      endDate != null
+                          ? "${endDate!.day}/${endDate!.month}/${endDate!.year}"
+                          : 'Bitiş',
+                      style: TextStyle(fontSize: 11),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -353,8 +449,8 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
   }
 
   Widget _buildRecognitionLogsList(bool isLandscape) {
-    final logs = getFilteredLogs(selectedUserId!);
-    
+    final logs = getFilteredLogs(selectedUserId);
+
     if (logs.isEmpty) {
       return Center(
         child: Column(
@@ -363,7 +459,9 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
             Icon(Icons.search_off, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
-              'Bu tarih aralığında tanıma kaydı bulunamadı',
+              selectedUserId == null 
+                  ? 'Hiç tanıma kaydı bulunamadı'
+                  : 'Bu tarih aralığında tanıma kaydı bulunamadı',
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
           ],
@@ -371,7 +469,7 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
       );
     }
 
-    return isLandscape 
+    return isLandscape
         ? _buildLandscapeLogsList(logs)
         : _buildPortraitLogsList(logs);
   }
@@ -384,89 +482,155 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
         final log = logs[index];
         final timestamp = log['timestamp'];
         final photoUrls = log['photo_urls'] ?? {};
-        
-        return Card(
-          margin: EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: EdgeInsets.all(16),
+
+        return Dismissible(
+          key: Key(timestamp),
+          direction: DismissDirection.endToStart, // Sağdan sola kaydır
+          background: Container(
+            margin: EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            alignment: Alignment.centerRight,
+            padding: EdgeInsets.only(right: 20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.access_time, color: Colors.blue),
-                    SizedBox(width: 8),
-                    Text(
-                      _formatDateTime(log['datetime']),
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                Icon(Icons.delete, color: Colors.white, size: 30),
+                SizedBox(height: 4),
+                Text(
+                  'Sil',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          confirmDismiss: (direction) async {
+            return await showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Kaydı Sil'),
+                  content: Text('Bu tanıma kaydını silmek istediğinizden emin misiniz?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text('İptal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: Text('Sil', style: TextStyle(color: Colors.red)),
                     ),
                   ],
-                ),
-                SizedBox(height: 12),
-                
-                // Fotoğraflar
-                if (photoUrls.isNotEmpty)
+                );
+              },
+            );
+          },
+          onDismissed: (direction) {
+            final userId = selectedUserId ?? log['user_id'];
+            if (userId != null) {
+              deleteRecognitionLog(userId, timestamp);
+            }
+          },
+          child: Card(
+            margin: EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Row(
                     children: [
-                      if (photoUrls['full_image'] != null)
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => showRecognitionPhoto(
-                              selectedUserId!,
-                              timestamp,
-                              'full_image.jpg',
-                            ),
-                            child: Container(
-                              height: 120,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[300]!),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  '${FaceApiService.baseUrl}${photoUrls['full_image']}',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => 
-                                      Center(child: Icon(Icons.error)),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                      Icon(Icons.access_time, color: Colors.blue),
                       SizedBox(width: 8),
-                      if (photoUrls['face_crop'] != null)
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => showRecognitionPhoto(
-                              selectedUserId!,
-                              timestamp,
-                              'face_crop.jpg',
-                            ),
-                            child: Container(
-                              height: 120,
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey[300]!),
-                                borderRadius: BorderRadius.circular(8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatDateTime(log['datetime']),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  '${FaceApiService.baseUrl}${photoUrls['face_crop']}',
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) => 
-                                      Center(child: Icon(Icons.error)),
+                            ),
+                            if (selectedUserId == null && log['user_id'] != null)
+                              Text(
+                                'Kullanıcı: ${_getUserName(log['user_id'])}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey[600],
                                 ),
                               ),
-                            ),
-                          ),
+                          ],
                         ),
+                      ),
                     ],
                   ),
-              ],
+                  SizedBox(height: 12),
+
+                  // Fotoğraflar
+                  if (photoUrls.isNotEmpty)
+                    Row(
+                      children: [
+                        if (photoUrls['full_image'] != null)
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => showRecognitionPhoto(
+                                selectedUserId ?? log['user_id'],
+                                timestamp,
+                                'full_image.jpg',
+                              ),
+                              child: Container(
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey[300]!),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    '${FaceApiService.baseUrl}${photoUrls['full_image']}',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Center(child: Icon(Icons.error)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        SizedBox(width: 8),
+                        if (photoUrls['face_crop'] != null)
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => showRecognitionPhoto(
+                                selectedUserId ?? log['user_id'],
+                                timestamp,
+                                'face_crop.jpg',
+                              ),
+                              child: Container(
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: Colors.grey[300]!),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.network(
+                                    '${FaceApiService.baseUrl}${photoUrls['face_crop']}',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        Center(child: Icon(Icons.error)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
         );
@@ -488,92 +652,156 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
         final log = logs[index];
         final timestamp = log['timestamp'];
         final photoUrls = log['photo_urls'] ?? {};
-        
-        return Card(
-          child: Padding(
-            padding: EdgeInsets.all(12),
+
+        return Dismissible(
+          key: Key(timestamp),
+          direction: DismissDirection.endToStart, // Sağdan sola kaydır
+          background: Container(
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            alignment: Alignment.centerRight,
+            padding: EdgeInsets.only(right: 20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  children: [
-                    Icon(Icons.access_time, color: Colors.blue, size: 16),
-                    SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        _formatDateTime(log['datetime']),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                Icon(Icons.delete, color: Colors.white, size: 24),
+                SizedBox(height: 4),
+                Text(
+                  'Sil',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          confirmDismiss: (direction) async {
+            return await showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Kaydı Sil'),
+                  content: Text('Bu tanıma kaydını silmek istediğinizden emin misiniz?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: Text('İptal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: Text('Sil', style: TextStyle(color: Colors.red)),
                     ),
                   ],
-                ),
-                SizedBox(height: 8),
-                
-                // Fotoğraflar
-                if (photoUrls.isNotEmpty)
-                  Expanded(
-                    child: Row(
-                      children: [
-                        if (photoUrls['full_image'] != null)
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => showRecognitionPhoto(
-                                selectedUserId!,
-                                timestamp,
-                                'full_image.jpg',
+                );
+              },
+            );
+          },
+          onDismissed: (direction) {
+            final userId = selectedUserId ?? log['user_id'];
+            if (userId != null) {
+              deleteRecognitionLog(userId, timestamp);
+            }
+          },
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, color: Colors.blue, size: 16),
+                      SizedBox(width: 4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _formatDateTime(log['datetime']),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
                               ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey[300]!),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    '${FaceApiService.baseUrl}${photoUrls['full_image']}',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => 
-                                        Center(child: Icon(Icons.error)),
-                                  ),
-                                ),
-                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        if (photoUrls['full_image'] != null && photoUrls['face_crop'] != null)
-                          SizedBox(width: 4),
-                        if (photoUrls['face_crop'] != null)
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => showRecognitionPhoto(
-                                selectedUserId!,
-                                timestamp,
-                                'face_crop.jpg',
-                              ),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey[300]!),
-                                  borderRadius: BorderRadius.circular(8),
+                            if (selectedUserId == null && log['user_id'] != null)
+                              Text(
+                                '${_getUserName(log['user_id'])}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey[600],
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
-                                  child: Image.network(
-                                    '${FaceApiService.baseUrl}${photoUrls['face_crop']}',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => 
-                                        Center(child: Icon(Icons.error)),
-                                  ),
-                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ),
-                      ],
-                    ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-              ],
+                  SizedBox(height: 8),
+
+                  // Fotoğraflar
+                  if (photoUrls.isNotEmpty)
+                    Expanded(
+                      child: Row(
+                        children: [
+                          if (photoUrls['full_image'] != null)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => showRecognitionPhoto(
+                                  selectedUserId ?? log['user_id'],
+                                  timestamp,
+                                  'full_image.jpg',
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey[300]!),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      '${FaceApiService.baseUrl}${photoUrls['full_image']}',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          Center(child: Icon(Icons.error)),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (photoUrls['full_image'] != null && photoUrls['face_crop'] != null)
+                            SizedBox(width: 4),
+                          if (photoUrls['face_crop'] != null)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => showRecognitionPhoto(
+                                  selectedUserId ?? log['user_id'],
+                                  timestamp,
+                                  'face_crop.jpg',
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.grey[300]!),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(
+                                      '${FaceApiService.baseUrl}${photoUrls['face_crop']}',
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) =>
+                                          Center(child: Icon(Icons.error)),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         );

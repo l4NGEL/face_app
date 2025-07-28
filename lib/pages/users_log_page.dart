@@ -21,7 +21,7 @@ class _UsersPageState extends State<UsersPage> {
     setState(() { isLoading = true; });
     try {
       users = await FaceApiService.listUsers();
-      
+
       // Her kullanıcının fotoğraflarını çek
       for (var user in users) {
         final idNo = user['id_no'] ?? user['id'];
@@ -59,9 +59,9 @@ class _UsersPageState extends State<UsersPage> {
       builder: (_) => Dialog(
         child: InteractiveViewer(
           child: Image.network(
-            photoUrl, 
+            photoUrl,
             fit: BoxFit.contain,
-            errorBuilder: (context, error, stackTrace) => 
+            errorBuilder: (context, error, stackTrace) =>
                 Center(child: Text('Fotoğraf yüklenemedi')),
           ),
         ),
@@ -76,16 +76,16 @@ class _UsersPageState extends State<UsersPage> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           final isLandscape = constraints.maxWidth > constraints.maxHeight;
-          
+
           if (isLoading) {
             return Center(child: CircularProgressIndicator());
           }
-          
+
           if (users.isEmpty) {
             return Center(child: Text('Kayıtlı kullanıcı yok.'));
           }
-          
-          return isLandscape 
+
+          return isLandscape
               ? _buildLandscapeLayout(constraints)
               : _buildPortraitLayout(constraints);
         },
@@ -102,7 +102,7 @@ class _UsersPageState extends State<UsersPage> {
         final photos = userPhotos[idNo] ?? [];
         final firstPhoto = photos.isNotEmpty ? photos.first : '1.jpg';
         final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$firstPhoto';
-        
+
         return ListTile(
           leading: GestureDetector(
             onTap: () => showProfilePhoto(idNo, firstPhoto),
@@ -162,7 +162,7 @@ class _UsersPageState extends State<UsersPage> {
         final photos = userPhotos[idNo] ?? [];
         final firstPhoto = photos.isNotEmpty ? photos.first : '1.jpg';
         final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$firstPhoto';
-        
+
         return Card(
           elevation: 4,
           child: Padding(
