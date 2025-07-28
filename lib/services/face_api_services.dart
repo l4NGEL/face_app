@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 
 class FaceApiService {
-  static const String baseUrl = 'http://10.73.106.247:5000';// API adresini güncelle!
+  static const String baseUrl = 'http://10.6.2.63:5000';// API adresini güncelle!
 
   static Future<Map<String, dynamic>> recognizeFace(File imageFile) async {
     final imageBase64 = await compressAndEncodeImage(imageFile);
@@ -53,6 +53,71 @@ class FaceApiService {
       return json.decode(response.body)['logs'] ?? [];
     } else {
       throw Exception('Loglar alınamadı');
+    }
+  }
+
+  static Future<List<dynamic>> getRecognitionLogs(String userId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/recognition_logs/$userId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['logs'] ?? [];
+    } else {
+      throw Exception('Tanıma logları alınamadı');
+    }
+  }
+
+  static Future<Map<String, dynamic>> resetRecognitionSession() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reset_recognition_session'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    return json.decode(response.body);
+  }
+
+  static Future<List<dynamic>> getRealtimeRecognitionLogs() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/realtime_recognition_logs'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body)['logs'] ?? [];
+    } else {
+      throw Exception('Gerçek zamanlı loglar alınamadı');
+    }
+  }
+
+  static Future<List<String>> getUserPhotos(String idNo) async {
+    try {
+      print('API çağrısı yapılıyor: $baseUrl/user_photos/$idNo');
+      
+      // Önce test endpoint'ini çağır
+      final testResponse = await http.get(
+        Uri.parse('$baseUrl/test_user_photos/$idNo'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      print('Test endpoint yanıtı: ${testResponse.statusCode} - ${testResponse.body}');
+      
+      final response = await http.get(
+        Uri.parse('$baseUrl/user_photos/$idNo'),
+        headers: {'Content-Type': 'application/json'},
+      );
+      print('API yanıt kodu: ${response.statusCode}');
+      print('API yanıtı: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final photos = List<String>.from(data['photos'] ?? []);
+        print('Çözümlenen fotoğraflar: $photos');
+        return photos;
+      } else {
+        print('API hatası: ${response.statusCode} - ${response.body}');
+        throw Exception('Kullanıcı fotoğrafları alınamadı: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Hata yakalandı: $e');
+      throw Exception('Kullanıcı fotoğrafları alınamadı: $e');
     }
   }
 

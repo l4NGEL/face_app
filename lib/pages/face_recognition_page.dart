@@ -19,11 +19,41 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   String? birthDate;
   Timer? _timer;
   bool _isProcessing = false;
+  
+  // Gerçek zamanlı tanıma kayıtları
+  List<Map<String, dynamic>> _realtimeLogs = [];
+  Timer? _logsTimer;
 
   @override
   void initState() {
     super.initState();
     _initCamera();
+    _resetRecognitionSession();
+    _startLogsUpdateTimer();
+  }
+
+  Future<void> _resetRecognitionSession() async {
+    try {
+      await FaceApiService.resetRecognitionSession();
+      print("Tanıma oturumu sıfırlandı");
+    } catch (e) {
+      print("Oturum sıfırlama hatası: $e");
+    }
+  }
+
+  void _startLogsUpdateTimer() {
+    _logsTimer = Timer.periodic(Duration(seconds: 1), (_) => _updateRealtimeLogs());
+  }
+
+  Future<void> _updateRealtimeLogs() async {
+    try {
+      final logs = await FaceApiService.getRealtimeRecognitionLogs();
+      setState(() {
+        _realtimeLogs = List<Map<String, dynamic>>.from(logs);
+      });
+    } catch (e) {
+      print("Log güncelleme hatası: $e");
+    }
   }
 
   Future<void> _initCamera() async {
@@ -59,9 +89,17 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
           idNo = result['id_no'] ?? '';
           birthDate = result['birth_date'] ?? '';
           resultMessage = "Tanınan kişi: $recognizedName";
+        } else if (result['success'] == true && result['recognized'] == false) {
+          // Bu kişi zaten tanındı durumu
+          recognizedName = result['name'];
+          idNo = result['id_no'] ?? '';
+          birthDate = result['birth_date'] ?? '';
+          resultMessage = "Bu kişi zaten tanındı: $recognizedName";
         } else {
+          resultMessage = result['message'] ?? "Tanınmayan kişi";
           recognizedName = null;
-          resultMessage = "Tanınmayan kişi";
+          idNo = null;
+          birthDate = null;
         }
       });
 
@@ -98,8 +136,18 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   @override
   void dispose() {
     _timer?.cancel();
+    _logsTimer?.cancel();
     _controller?.dispose();
     super.dispose();
+  }
+
+  String _formatDateTime(String isoString) {
+    try {
+      final dateTime = DateTime.parse(isoString);
+      return "${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}";
+    } catch (e) {
+      return isoString;
+    }
   }
 
   @override
@@ -111,6 +159,91 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
               fit: StackFit.expand,
               children: [
                 CameraPreview(_controller!),
+                
+                // Gerçek zamanlı tanıma kayıtları - sağ tarafta
+                if (_realtimeLogs.isNotEmpty)
+                  Positioned(
+                    top: 100,
+                    right: 16,
+                    child: Container(
+                      width: 280,
+                      height: 400,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.8),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.greenAccent, width: 2),
+                      ),
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.greenAccent.withOpacity(0.2),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(14),
+                                topRight: Radius.circular(14),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.people, color: Colors.greenAccent, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Tanınan Kişiler (${_realtimeLogs.length})",
+                                  style: TextStyle(
+                                    color: Colors.greenAccent,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: ListView.builder(
+                              padding: EdgeInsets.all(8),
+                              itemCount: _realtimeLogs.length,
+                              itemBuilder: (context, index) {
+                                final log = _realtimeLogs[index];
+                                return Container(
+                                  margin: EdgeInsets.only(bottom: 8),
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.greenAccent.withOpacity(0.3)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        log['name'] ?? 'Bilinmeyen',
+                                        style: TextStyle(
+                                          color: Colors.greenAccent,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        "Kimlik: ${log['id_no'] ?? 'N/A'}",
+                                        style: TextStyle(color: Colors.white, fontSize: 12),
+                                      ),
+                                      Text(
+                                        "Tarih: ${_formatDateTime(log['timestamp'])}",
+                                        style: TextStyle(color: Colors.white70, fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                
                 // Bilgi kutusu üstte, gölgeli ve yarı saydam
                 if (resultMessage != null)
                   Align(
@@ -163,6 +296,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
                       ),
                     ),
                   ),
+                
                 // Sol üstte geri butonu
                 Positioned(
                   top: 24,
@@ -177,6 +311,40 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
                             width: 44,
                             height: 44,
                             child: Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                // Sağ üstte oturum sıfırlama butonu
+                Positioned(
+                  top: 24,
+                  right: 16,
+                  child: SafeArea(
+                    child: ClipOval(
+                      child: Material(
+                        color: Colors.orange.withOpacity(0.8),
+                        child: InkWell(
+                          onTap: () async {
+                            await _resetRecognitionSession();
+                            setState(() {
+                              _realtimeLogs.clear();
+                              resultMessage = null;
+                              recognizedName = null;
+                            });
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Tanıma oturumu sıfırlandı'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                          },
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Icon(Icons.refresh, color: Colors.white, size: 28),
                           ),
                         ),
                       ),

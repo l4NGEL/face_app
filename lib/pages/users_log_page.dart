@@ -8,6 +8,7 @@ class UsersPage extends StatefulWidget {
 
 class _UsersPageState extends State<UsersPage> {
   List<dynamic> users = [];
+  Map<String, List<String>> userPhotos = {};
   bool isLoading = true;
 
   @override
@@ -20,6 +21,20 @@ class _UsersPageState extends State<UsersPage> {
     setState(() { isLoading = true; });
     try {
       users = await FaceApiService.listUsers();
+      
+      // Her kullanıcının fotoğraflarını çek
+      for (var user in users) {
+        final idNo = user['id_no'] ?? user['id'];
+        try {
+          print('Kullanıcı fotoğrafları isteniyor: $idNo');
+          final photos = await FaceApiService.getUserPhotos(idNo);
+          print('Alınan fotoğraflar: $photos');
+          userPhotos[idNo] = photos;
+        } catch (e) {
+          print('Fotoğraf çekme hatası ($idNo): $e');
+          userPhotos[idNo] = [];
+        }
+      }
     } catch (e) {
       users = [];
       ScaffoldMessenger.of(context).showSnackBar(
@@ -37,38 +52,17 @@ class _UsersPageState extends State<UsersPage> {
     await fetchUsers();
   }
 
-  void showProfilePhoto(String idNo) {
-    final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/1.jpg';
+  void showProfilePhoto(String idNo, String photoName) {
+    final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$photoName';
     showDialog(
       context: context,
       builder: (_) => Dialog(
         child: InteractiveViewer(
-          child: Image.network(photoUrl, fit: BoxFit.contain),
-        ),
-      ),
-    );
-  }
-
-  void showProfileGallery(String idNo) {
-    final List<String> photoUrls = List.generate(
-      5,
-      (i) => '${FaceApiService.baseUrl}/user_photo/$idNo/${i + 1}.jpg',
-    );
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        child: SizedBox(
-          width: 320,
-          height: 400,
-          child: PageView.builder(
-            itemCount: photoUrls.length,
-            itemBuilder: (context, index) {
-              return Image.network(
-                photoUrls[index],
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) => Center(child: Text('Fotoğraf yok')),
-              );
-            },
+          child: Image.network(
+            photoUrl, 
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) => 
+                Center(child: Text('Fotoğraf yüklenemedi')),
           ),
         ),
       ),
@@ -88,15 +82,18 @@ class _UsersPageState extends State<UsersPage> {
         itemBuilder: (context, index) {
           final user = users[index];
           final idNo = user['id_no'] ?? user['id'];
-          final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/1.jpg';
+          final photos = userPhotos[idNo] ?? [];
+          final firstPhoto = photos.isNotEmpty ? photos.first : '1.jpg';
+          final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$firstPhoto';
+          
           return ListTile(
             leading: GestureDetector(
-              onTap: () => showProfileGallery(idNo),
+              onTap: () => showProfilePhoto(idNo, firstPhoto),
               child: CircleAvatar(
                 backgroundImage: NetworkImage(photoUrl),
                 radius: 28,
                 onBackgroundImageError: (_, __) {},
-                child: Icon(Icons.person),
+                child: photos.isEmpty ? Icon(Icons.person) : null,
               ),
             ),
             title: Text(user['name'] ?? ''),

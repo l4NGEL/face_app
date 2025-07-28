@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'face_recognition_page.dart';
 import 'add_user_page.dart';
 import 'users_log_page.dart';
+import 'recognition_query_page.dart';
 
 class HomePage extends StatelessWidget {
   final Color greenColor = const Color(0xFF57b236);
@@ -22,7 +23,7 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 40),
 
-            // 3 Düğme
+            // 4 Düğme
             _buildButton(
               icon: Icons.face,
               label: 'Yüz Tanıma Yap',
@@ -47,6 +48,15 @@ class HomePage extends StatelessWidget {
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => UsersPage()),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildButton(
+              icon: Icons.search,
+              label: 'Tanıma Sorgula',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => RecognitionQueryPage()),
               ),
             ),
 
