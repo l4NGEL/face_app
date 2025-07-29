@@ -87,10 +87,4 @@ POST /recognize_face    // Yüz tanıma
 GET /realtime_logs      // Tanıma logları
 ```
 
-## Lisans
-
-MIT License
-
----
-
 ⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!
