@@ -49,6 +49,4 @@ Bu proje, Flutter ile yazılmış bir mobil uygulama ve Python (Flask) tabanlı 
 - Kullanıcı silme işlemi için API ve Flutter kodları uyumlu olmalıdır.
 - Yüz tanıma için MobilFaceNet TFLite modeli gereklidir.
 
----
 
-Her türlü katkı ve geri bildirim için PR ve issue açabilirsiniz.
