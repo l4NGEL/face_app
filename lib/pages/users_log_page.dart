@@ -22,7 +22,7 @@ class _UsersPageState extends State<UsersPage> {
     try {
       users = await FaceApiService.listUsers();
 
-      // Her kullanıcının fotoğraflarını çek
+
       for (var user in users) {
         final idNo = user['id_no'] ?? user['id'];
         try {

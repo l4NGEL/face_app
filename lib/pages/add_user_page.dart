@@ -3,22 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import '../services/face_api_services.dart';
+import 'home_page.dart'; // Doğru home page import'u
 
 // Tarih formatı için özel input formatter
 class _DateInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
+      TextEditingValue oldValue,
+      TextEditingValue newValue,
+      ) {
     // Sadece rakamları al
     String text = newValue.text.replaceAll(RegExp(r'[^\d]'), '');
-    
+
     // Maksimum 8 rakam (YYYYMMDD)
     if (text.length > 8) {
       text = text.substring(0, 8);
     }
-    
+
     // Tire ekleme
     String formatted = '';
     for (int i = 0; i < text.length; i++) {
@@ -27,7 +28,7 @@ class _DateInputFormatter extends TextInputFormatter {
       }
       formatted += text[i];
     }
-    
+
     return TextEditingValue(
       text: formatted,
       selection: TextSelection.collapsed(offset: formatted.length),
@@ -43,6 +44,7 @@ class AddUserPage extends StatefulWidget {
 class _AddUserPageState extends State<AddUserPage> {
   CameraController? _controller;
   List<CameraDescription>? cameras;
+  int _currentCameraIndex = 0; // Kamera indeksi eklendi
   List<File> faceImages = [];
   int faceCount = 0;
   final nameController = TextEditingController();
@@ -50,7 +52,8 @@ class _AddUserPageState extends State<AddUserPage> {
   final birthDateController = TextEditingController();
   bool isDetecting = false;
   bool isCapturing = false;
-  
+  bool isSaving = false; // Save button loading state
+
   // Focus node'ları ekle
   final FocusNode _nameFocusNode = FocusNode();
   final FocusNode _idNoFocusNode = FocusNode();
@@ -66,22 +69,100 @@ class _AddUserPageState extends State<AddUserPage> {
     cameras = await availableCameras();
     if (cameras != null && cameras!.isNotEmpty) {
       // Ön kamerayı bul
-      final frontCamera = cameras!.firstWhere(
-        (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras![0], // Ön kamera yoksa ilk kamerayı kullan
+      _currentCameraIndex = cameras!.indexWhere(
+            (camera) => camera.lensDirection == CameraLensDirection.front,
       );
-      _controller = CameraController(
-        frontCamera, 
-        ResolutionPreset.medium,
-        enableAudio: false, // Ses kapalı
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
-      await _controller!.initialize();
-      
-      // Kamera yönlendirmesini sabitle
-      await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
-      
-      setState(() {});
+      if (_currentCameraIndex == -1) {
+        _currentCameraIndex = 0; // Ön kamera yoksa ilk kamerayı kullan
+      }
+
+      await _initializeCamera();
+    }
+  }
+
+  Future<void> _initializeCamera() async {
+    if (cameras == null || cameras!.isEmpty) return;
+
+    // Mevcut controller'ı dispose et
+    await _controller?.dispose();
+
+    // Arka kamera için yüksek çözünürlük, ön kamera için orta çözünürlük
+    final isBackCamera = cameras![_currentCameraIndex].lensDirection == CameraLensDirection.back;
+    final resolution = isBackCamera ? ResolutionPreset.high : ResolutionPreset.medium;
+
+    _controller = CameraController(
+      cameras![_currentCameraIndex],
+      resolution, // Arka kamera için yüksek, ön kamera için orta çözünürlük
+      enableAudio: false, // Ses kapalı
+      imageFormatGroup: ImageFormatGroup.jpeg,
+    );
+    await _controller!.initialize();
+
+    // Kamera yönlendirmesini sabitle
+    await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
+    // Zoom seviyesini ayarla (normal görüş için zoom artır)
+    try {
+      final zoomLevel = isBackCamera ? 1.0 : 0.8; // Normal zoom seviyeleri
+      await _controller!.setZoomLevel(zoomLevel);
+    } catch (e) {
+      print("Zoom ayarlanamadı: $e");
+    }
+
+    setState(() {});
+  }
+
+  // Kamera değiştirme fonksiyonu
+  Future<void> _switchCamera() async {
+    if (cameras == null || cameras!.isEmpty) return;
+
+    // Mevcut kameranın yönünü al
+    final currentDirection = cameras![_currentCameraIndex].lensDirection;
+
+    // Karşı yöndeki kameraları bul
+    final oppositeDirection = currentDirection == CameraLensDirection.front
+        ? CameraLensDirection.back
+        : CameraLensDirection.front;
+
+    // Karşı yöndeki kameraların indekslerini bul
+    int wideAngleIndex = -1;
+    int normalIndex = -1;
+
+    for (int i = 0; i < cameras!.length; i++) {
+      final camera = cameras![i];
+      if (camera.lensDirection == oppositeDirection) {
+        // Geniş açılı kamera tespiti
+        if (camera.name.toLowerCase().contains('wide') ||
+            camera.name.toLowerCase().contains('ultra') ||
+            camera.name.toLowerCase().contains('0.6') ||
+            camera.name.toLowerCase().contains('0.5') ||
+            camera.sensorOrientation == 90) {
+          wideAngleIndex = i;
+          break; // İlk geniş açılı kamerayı bulduğunda dur
+        } else if (normalIndex == -1) {
+          normalIndex = i;
+        }
+      }
+    }
+
+    // Geniş açılı kamera bulunduysa onu kullan, yoksa normal kamerayı kullan
+    if (wideAngleIndex != -1) {
+      _currentCameraIndex = wideAngleIndex;
+      await _initializeCamera();
+    } else if (normalIndex != -1) {
+      _currentCameraIndex = normalIndex;
+      await _initializeCamera();
+    }
+
+    // Kamera değiştirdikten sonra zoom seviyesini tekrar ayarla
+    if (_controller != null && _controller!.value.isInitialized) {
+      try {
+        final isBackCamera = cameras![_currentCameraIndex].lensDirection == CameraLensDirection.back;
+        final zoomLevel = isBackCamera ? 1.0 : 0.8; // Normal zoom seviyeleri
+        await _controller!.setZoomLevel(zoomLevel);
+      } catch (e) {
+        print("Zoom ayarlanamadı: $e");
+      }
     }
   }
 
@@ -106,24 +187,35 @@ class _AddUserPageState extends State<AddUserPage> {
   }
 
   Future<void> _saveUser() async {
+    // Set loading state
+    setState(() {
+      isSaving = true;
+    });
+
     // Kimlik numarası validasyonu
     if (idNoController.text.length != 11) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Kimlik numarası 11 haneli olmalıdır!'),
         backgroundColor: Colors.red,
       ));
+      setState(() {
+        isSaving = false;
+      });
       return;
     }
-    
+
     // Doğum tarihi validasyonu
     if (birthDateController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Doğum tarihi zorunludur!'),
         backgroundColor: Colors.red,
       ));
+      setState(() {
+        isSaving = false;
+      });
       return;
     }
-    
+
     // Doğum tarihi format kontrolü (YYYY-AA-GG)
     final dateRegex = RegExp(r'^\d{4}-\d{2}-\d{2}$');
     if (!dateRegex.hasMatch(birthDateController.text)) {
@@ -131,40 +223,52 @@ class _AddUserPageState extends State<AddUserPage> {
         content: Text('Doğum tarihi YYYY-AA-GG formatında olmalıdır! (Örnek: 1990-01-15)'),
         backgroundColor: Colors.red,
       ));
+      setState(() {
+        isSaving = false;
+      });
       return;
     }
-    
+
     // Tarih geçerliliği kontrolü
     try {
       final parts = birthDateController.text.split('-');
       final year = int.parse(parts[0]);
       final month = int.parse(parts[1]);
       final day = int.parse(parts[2]);
-      
+
       if (year < 1900 || year > DateTime.now().year) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Geçerli bir yıl giriniz! (1900-${DateTime.now().year})'),
           backgroundColor: Colors.red,
         ));
+        setState(() {
+          isSaving = false;
+        });
         return;
       }
-      
+
       if (month < 1 || month > 12) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Geçerli bir ay giriniz! (01-12)'),
           backgroundColor: Colors.red,
         ));
+        setState(() {
+          isSaving = false;
+        });
         return;
       }
-      
+
       if (day < 1 || day > 31) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Geçerli bir gün giriniz! (01-31)'),
           backgroundColor: Colors.red,
         ));
+        setState(() {
+          isSaving = false;
+        });
         return;
       }
-      
+
       // DateTime ile geçerlilik kontrolü
       final birthDate = DateTime(year, month, day);
       if (birthDate.isAfter(DateTime.now())) {
@@ -172,37 +276,66 @@ class _AddUserPageState extends State<AddUserPage> {
           content: Text('Doğum tarihi gelecekte olamaz!'),
           backgroundColor: Colors.red,
         ));
+        setState(() {
+          isSaving = false;
+        });
         return;
       }
-      
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('Geçersiz tarih formatı!'),
         backgroundColor: Colors.red,
       ));
+      setState(() {
+        isSaving = false;
+      });
       return;
     }
-    
+
     if (nameController.text.isEmpty || idNoController.text.isEmpty || birthDateController.text.isEmpty || faceImages.length < 1) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tüm alanları doldurun ve en az 1 fotoğraf çekin!')));
+      setState(() {
+        isSaving = false;
+      });
       return;
     }
 
-    List<String> imagesBase64 = [];
-    for (var file in faceImages) {
-      imagesBase64.add(await FaceApiService.compressAndEncodeImage(file));
-    }
+    try {
+      List<String> imagesBase64 = [];
+      for (var file in faceImages) {
+        imagesBase64.add(await FaceApiService.compressAndEncodeImage(file));
+      }
 
-    final result = await FaceApiService.addUser(
-      nameController.text,
-      idNoController.text,
-      birthDateController.text,
-      imagesBase64,
-    );
+      final result = await FaceApiService.addUser(
+        nameController.text,
+        idNoController.text,
+        birthDateController.text,
+        imagesBase64,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? 'Kayıt tamamlandı')));
-    if (result['success'] == true) {
-      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result['message'] ?? 'Kayıt tamamlandı')));
+      if (result['success'] == true) {
+        // Başarılı kayıt sonrası home page'e yönlendir
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => HomePage()),
+              (route) => false,
+        );
+      } else {
+        // Reset loading state if not successful
+        setState(() {
+          isSaving = false;
+        });
+      }
+    } catch (e) {
+      // Handle any exceptions
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Kayıt sırasında hata oluştu: ${e.toString()}'),
+        backgroundColor: Colors.red,
+      ));
+      setState(() {
+        isSaving = false;
+      });
     }
   }
 
@@ -285,7 +418,7 @@ class _AddUserPageState extends State<AddUserPage> {
                   labelText: 'Doğum Tarihi (YYYY-AA-GG)',
                   border: OutlineInputBorder(),
                   counterText: '${birthDateController.text.length}/10',
-                  helperText: 'Sadece rakamları girin, tireler otomatik eklenecek',
+                  helperText: 'Sadece rakamları girin',
                 ),
                 keyboardType: TextInputType.number,
                 textInputAction: TextInputAction.done,
@@ -316,7 +449,34 @@ class _AddUserPageState extends State<AddUserPage> {
               color: Colors.black,
             ),
             clipBehavior: Clip.hardEdge,
-            child: CameraPreview(_controller!),
+            child: Stack(
+              children: [
+                Transform.scale(
+                  scale: _controller!.description.lensDirection == CameraLensDirection.back ? 2.5 : 2.2, // Siyah alanları tamamen kaldırmak için maksimum scale
+                  child: Center(
+                    child: CameraPreview(_controller!),
+                  ),
+                ),
+                // Kamera değiştirme butonu - sağ üst köşede
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: ClipOval(
+                    child: Material(
+                      color: Colors.black.withOpacity(0.6),
+                      child: InkWell(
+                        onTap: _switchCamera,
+                        child: SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: Icon(Icons.flip_camera_ios, color: Colors.white, size: 24),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         SizedBox(height: 8),
         Text('Yüz fotoğrafı çekin (en az 1, en fazla 5): $faceCount / 5'),
@@ -335,8 +495,25 @@ class _AddUserPageState extends State<AddUserPage> {
             ),
             SizedBox(width: 16),
             ElevatedButton(
-              onPressed: _saveUser,
-              child: Text('Kaydet'),
+              onPressed: isSaving ? null : () {
+                print("Kaydet butonuna tıklandı");
+                _saveUser();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: isSaving
+                  ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                  SizedBox(width: 8),
+                  Text('Kaydediliyor...')
+                ],
+              )
+                  : Text('Kaydet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -445,8 +622,24 @@ class _AddUserPageState extends State<AddUserPage> {
                     SizedBox(width: 16),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _saveUser,
-                        child: Text('Kaydet'),
+                        onPressed: isSaving ? null : () {
+                          print("Kaydet butonuna tıklandı (landscape)");
+                          _saveUser();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: isSaving
+                            ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                            SizedBox(width: 8),
+                          ],
+                        )
+                            : Text('Kaydet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -476,7 +669,34 @@ class _AddUserPageState extends State<AddUserPage> {
                 color: Colors.black,
               ),
               clipBehavior: Clip.hardEdge,
-              child: CameraPreview(_controller!),
+              child: Stack(
+                children: [
+                  Transform.scale(
+                    scale: _controller!.description.lensDirection == CameraLensDirection.back ? 2.5 : 2.2, // Siyah alanları tamamen kaldırmak için maksimum scale
+                    child: Center(
+                      child: CameraPreview(_controller!),
+                    ),
+                  ),
+                  // Kamera değiştirme butonu - sağ üst köşede
+                  Positioned(
+                    top: 16,
+                    right: 16,
+                    child: ClipOval(
+                      child: Material(
+                        color: Colors.black.withOpacity(0.6),
+                        child: InkWell(
+                          onTap: _switchCamera,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Icon(Icons.flip_camera_ios, color: Colors.white, size: 24),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
       ],

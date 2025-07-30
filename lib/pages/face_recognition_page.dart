@@ -14,12 +14,21 @@ class FaceRecognitionPage extends StatefulWidget {
 class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   CameraController? _controller;
   List<CameraDescription>? cameras;
+  int _currentCameraIndex = 0; // Kamera indeksi eklendi
   String? resultMessage;
   String? recognizedName;
   String? idNo;
   String? birthDate;
   Timer? _timer;
   bool _isProcessing = false;
+
+  // Zoom kontrolü için değişkenler
+  double _currentZoomLevel = 1.0;
+  double _minZoomLevel = 1.0;
+  double _maxZoomLevel = 10.0;
+  double _pendingZoomLevel = 1.0; // Slider UI için geçici değer
+  bool _isZooming = false; // Zoom işlemi devam ediyor mu kontrolü
+  Timer? _zoomDebounceTimer; // Zoom debounce için timer
 
   // Gerçek zamanlı tanıma kayıtları
   List<Map<String, dynamic>> _realtimeLogs = [];
@@ -63,41 +72,162 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   Future<void> _initCamera() async {
     cameras = await availableCameras();
     if (cameras != null && cameras!.isNotEmpty) {
-      final frontCamera = cameras!.firstWhere(
+      // Ön kamerayı bul
+      _currentCameraIndex = cameras!.indexWhere(
             (camera) => camera.lensDirection == CameraLensDirection.front,
-        orElse: () => cameras![0],
       );
-      _controller = CameraController(
-        frontCamera, 
-        ResolutionPreset.medium,
-        enableAudio: false,
-        imageFormatGroup: ImageFormatGroup.jpeg,
-      );
-      await _controller!.initialize();
-      
-      // Kamera yönlendirmesini sabitle
-      await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
-      
-      setState(() {});
-      _startRecognitionLoop();
+      if (_currentCameraIndex == -1) {
+        _currentCameraIndex = 0; // Ön kamera yoksa ilk kamerayı kullan
+      }
+
+      await _initializeCamera();
+    }
+  }
+
+  Future<void> _initializeCamera() async {
+    if (cameras == null || cameras!.isEmpty) return;
+
+    // Mevcut controller'ı dispose et
+    await _controller?.dispose();
+
+    // Arka kamera için maksimum kalite, ön kamera için yüksek kalite
+    final isBackCamera = cameras![_currentCameraIndex].lensDirection == CameraLensDirection.back;
+    final resolution = isBackCamera ? ResolutionPreset.max : ResolutionPreset.high;
+
+    _controller = CameraController(
+      cameras![_currentCameraIndex],
+      resolution, // Arka kamera için maksimum, ön kamera için yüksek kalite
+      enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.jpeg,
+    );
+    await _controller!.initialize();
+
+    // Zoom seviyelerini ayarla (varsayılan değerler)
+    _minZoomLevel = 1.0;
+    _maxZoomLevel = 10.0;
+    _currentZoomLevel = _minZoomLevel;
+    _pendingZoomLevel = _currentZoomLevel;
+
+    // Arka kamera için başlangıç zoom ayarı
+    if (isBackCamera) {
+      try {
+        await _controller!.setZoomLevel(_currentZoomLevel);
+        print("Arka kamera zoom seviyesi: $_currentZoomLevel");
+      } catch (e) {
+        print("Zoom ayarlama hatası: $e");
+      }
+    }
+
+    // Kamera yönlendirmesini sabitle
+    await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
+    setState(() {});
+    _startRecognitionLoop();
+  }
+
+  // Zoom değiştirme fonksiyonu - daha agresif optimizasyon
+  Future<void> _setZoomLevel(double zoomLevel) async {
+    if (_controller == null || !_controller!.value.isInitialized || _isZooming) return;
+
+    // Zoom seviyesini sınırla
+    final clampedZoom = zoomLevel.clamp(_minZoomLevel, _maxZoomLevel);
+
+    // Eğer zoom seviyesi çok yakınsa işlem yapma (daha hassas kontrol)
+    if ((_currentZoomLevel - clampedZoom).abs() < 0.05) return;
+
+    _isZooming = true;
+
+    try {
+      // Zoom seviyesini ayarla
+      await _controller!.setZoomLevel(clampedZoom);
+
+      // setState'i daha az sıklıkta çağır
+      if ((_currentZoomLevel - clampedZoom).abs() > 0.2) {
+        setState(() {
+          _currentZoomLevel = clampedZoom;
+          _pendingZoomLevel = clampedZoom;
+        });
+      } else {
+        // Sadece current zoom'u güncelle, UI'ı güncelleme
+        _currentZoomLevel = clampedZoom;
+      }
+
+      print("Zoom seviyesi değiştirildi: $_currentZoomLevel");
+    } catch (e) {
+      print("Zoom değiştirme hatası: $e");
+      // Hata durumunda varsayılan zoom seviyesine dön
+      try {
+        await _controller!.setZoomLevel(1.0);
+        setState(() {
+          _currentZoomLevel = 1.0;
+          _pendingZoomLevel = 1.0;
+        });
+      } catch (fallbackError) {
+        print("Zoom fallback hatası: $fallbackError");
+      }
+    } finally {
+      _isZooming = false;
+    }
+  }
+
+  // Debounced zoom fonksiyonu - daha agresif optimizasyon
+  void _debouncedSetZoom(double zoomLevel) {
+    _zoomDebounceTimer?.cancel();
+    _zoomDebounceTimer = Timer(Duration(milliseconds: 50), () {
+      _setZoomLevel(zoomLevel);
+    });
+  }
+
+  // Kamera değiştirme fonksiyonu
+  Future<void> _switchCamera() async {
+    if (cameras == null || cameras!.isEmpty) return;
+
+    // Timer'ı durdur
+    _timer?.cancel();
+
+    // Mevcut kameranın yönünü al
+    final currentDirection = cameras![_currentCameraIndex].lensDirection;
+
+    // Karşı yöndeki kameraları bul
+    final oppositeDirection = currentDirection == CameraLensDirection.front
+        ? CameraLensDirection.back
+        : CameraLensDirection.front;
+
+    // Karşı yöndeki kameraların indekslerini bul
+    List<int> oppositeIndices = [];
+    for (int i = 0; i < cameras!.length; i++) {
+      if (cameras![i].lensDirection == oppositeDirection) {
+        oppositeIndices.add(i);
+      }
+    }
+
+    // Karşı yönde kamera varsa ilkine geç
+    if (oppositeIndices.isNotEmpty) {
+      _currentCameraIndex = oppositeIndices[0];
+      print("Kamera değiştiriliyor: ${cameras![_currentCameraIndex].lensDirection == CameraLensDirection.back ? 'Arka Kamera' : 'Ön Kamera'}");
+      await _initializeCamera();
     }
   }
 
   void _startRecognitionLoop() {
-    _timer = Timer.periodic(Duration(milliseconds: 1500), (_) => _captureAndRecognize());
+    // Arka kamera için daha hızlı tanıma, ön kamera için normal hız
+    final isBackCamera = _controller?.description.lensDirection == CameraLensDirection.back;
+    final interval = isBackCamera ? Duration(milliseconds: 1000) : Duration(milliseconds: 1500);
+
+    _timer = Timer.periodic(interval, (_) => _captureAndRecognize());
   }
 
   Future<void> _captureAndRecognize() async {
     if (_controller == null || !_controller!.value.isInitialized || _isProcessing) return;
     _isProcessing = true;
-    
+
     try {
       // Kamera durumunu kontrol et
       if (!_controller!.value.isInitialized) {
         _isProcessing = false;
         return;
       }
-      
+
       final XFile file = await _controller!.takePicture();
       final File imageFile = File(file.path);
 
@@ -160,6 +290,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   void dispose() {
     _timer?.cancel();
     _logsTimer?.cancel();
+    _zoomDebounceTimer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
@@ -186,6 +317,92 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
             fit: StackFit.expand,
             children: [
               CameraPreview(_controller!),
+
+              // Kamera değiştirme butonu - sol alt köşede
+              Positioned(
+                bottom: isLandscape ? 24 : 16,
+                left: isLandscape ? 24 : 16,
+                child: Column(
+                  children: [
+                    // Zoom Slider - sadece arka kamera için göster (dikey)
+                    if (_controller?.description.lensDirection == CameraLensDirection.back)
+                      Container(
+                        height: isLandscape ? 280 : 220,
+                        width: 70,
+                        padding: EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.zoom_in, color: Colors.white, size: 16),
+                            SizedBox(height: 8),
+                            Expanded(
+                              child: RotatedBox(
+                                quarterTurns: 3, // 270 derece döndür (dikey yap)
+                                child: SliderTheme(
+                                  data: SliderTheme.of(context).copyWith(
+                                    activeTrackColor: Colors.greenAccent,
+                                    inactiveTrackColor: Colors.white.withOpacity(0.3),
+                                    thumbColor: Colors.greenAccent,
+                                    overlayColor: Colors.greenAccent.withOpacity(0.2),
+                                    trackHeight: 4,
+                                  ),
+                                  child: Slider(
+                                    value: _pendingZoomLevel,
+                                    min: _minZoomLevel,
+                                    max: _maxZoomLevel,
+                                    divisions: 90, // Daha smooth hareket için
+                                    onChanged: (value) {
+                                      // UI'ı hemen güncelle ama zoom'u debounce et
+                                      setState(() {
+                                        _pendingZoomLevel = value;
+                                      });
+                                      // Debounced zoom uygula
+                                      _debouncedSetZoom(value);
+                                    },
+                                    onChangeEnd: (value) {
+                                      _zoomDebounceTimer?.cancel();
+                                      _setZoomLevel(value);
+                                    },
+                                  ),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 8),
+                            Icon(Icons.zoom_out, color: Colors.white, size: 16),
+                            SizedBox(height: 4),
+                            Text(
+                              '${_currentZoomLevel.toStringAsFixed(1)}x',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    if (_controller?.description.lensDirection == CameraLensDirection.back)
+                      SizedBox(height: 8),
+                    // Kamera Değiştirme Butonu
+                    ClipOval(
+                      child: Material(
+                        color: Colors.black.withOpacity(0.6),
+                        child: InkWell(
+                          onTap: _switchCamera,
+                          child: SizedBox(
+                            width: 44,
+                            height: 44,
+                            child: Icon(Icons.flip_camera_ios, color: Colors.white, size: 24),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
               // Gerçek zamanlı tanıma kayıtları - sağ alt köşede (açılır/kapanır)
               if (_realtimeLogs.isNotEmpty)

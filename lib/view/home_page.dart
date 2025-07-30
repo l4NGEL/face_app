@@ -1,8 +1,6 @@
 import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-
-///
 import '../model/items_model.dart';
 import '../utils/colors.dart';
 import '../components.dart';
@@ -24,7 +22,7 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  /// Anime
+
   Widget animationDo(
     int index,
     int delay,
@@ -81,7 +79,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
 
-                      /// TITLE TEXT
+
                       Padding(
                           padding: const EdgeInsets.only(top: 25, bottom: 15),
                           child: animationDo(
@@ -111,7 +109,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          /// ---------------------------
           Expanded(
             flex: 1,
             child: Column(
@@ -141,10 +138,10 @@ class _HomePageState extends State<HomePage> {
                 ),
                 currentIndex == 2
 
-                    /// GET STARTED BTN
+
                     ? GetStartBtn(size: size, textTheme: textTheme)
 
-                    /// SKIP BTN
+
                     : SkipBtn(
                         size: size,
                         textTheme: textTheme,
