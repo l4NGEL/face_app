@@ -35,7 +35,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   Timer? _logsTimer;
 
   // Tanınanlar listesi görünürlük kontrolü
-  bool _isRecognizedListVisible = true;
+  bool _isRecognizedListVisible = false; // Başlangıçta kapalı
 
   @override
   void initState() {
@@ -55,15 +55,18 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
   }
 
   void _startLogsUpdateTimer() {
-    _logsTimer = Timer.periodic(Duration(seconds: 1), (_) => _updateRealtimeLogs());
+    _logsTimer = Timer.periodic(Duration(seconds: 2), (_) => _updateRealtimeLogs());
   }
 
   Future<void> _updateRealtimeLogs() async {
     try {
       final logs = await FaceApiService.getRealtimeRecognitionLogs();
-      setState(() {
-        _realtimeLogs = List<Map<String, dynamic>>.from(logs);
-      });
+      // Sadece yeni kayıtlar varsa güncelle
+      if (logs.length != _realtimeLogs.length) {
+        setState(() {
+          _realtimeLogs = List<Map<String, dynamic>>.from(logs);
+        });
+      }
     } catch (e) {
       print("Log güncelleme hatası: $e");
     }
@@ -101,6 +104,9 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
       imageFormatGroup: ImageFormatGroup.jpeg,
     );
     await _controller!.initialize();
+    
+    // Flash'ı kapat
+    await _controller!.setFlashMode(FlashMode.off);
 
     // Zoom seviyelerini ayarla (varsayılan değerler)
     _minZoomLevel = 1.0;
@@ -178,6 +184,57 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
     });
   }
 
+  // Tanınan kişiyi listeye ekle
+  void _addToRecognizedList(String name, String idNo, String birthDate) {
+    // Aynı kişinin zaten listede olup olmadığını kontrol et
+    bool alreadyExists = _realtimeLogs.any((log) => log['id_no'] == idNo);
+    
+    if (!alreadyExists) {
+      final newLog = {
+        'name': name,
+        'id_no': idNo,
+        'birth_date': birthDate,
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      
+      setState(() {
+        _realtimeLogs.add(newLog);
+      });
+      
+      print("Tanınan kişi listeye eklendi: $name ($idNo)");
+    } else {
+      print("Kişi zaten listede mevcut: $name ($idNo)");
+    }
+  }
+
+  Color _getMessageColor(String message) {
+    if (recognizedName != null) {
+      return Colors.greenAccent; // Tanınan kişi
+    } else if (message.contains("Sistemde kayıtlı kullanıcı bulunamadı")) {
+      return Colors.orange; // Uyarı rengi - sistemde kullanıcı yok
+    } else if (message.contains("Yüz tespit edilemedi")) {
+      return Colors.yellow; // Sarı - yüz tespit sorunu
+    } else if (message.contains("Görüntü işlenemedi")) {
+      return Colors.red; // Kırmızı - görüntü işleme hatası
+    } else {
+      return Colors.redAccent; // Diğer hatalar
+    }
+  }
+
+  IconData _getMessageIcon(String message) {
+    if (recognizedName != null) {
+      return Icons.check_circle; // Tanınan kişi
+    } else if (message.contains("Sistemde kayıtlı kullanıcı bulunamadı")) {
+      return Icons.warning; // Uyarı ikonu - sistemde kullanıcı yok
+    } else if (message.contains("Yüz tespit edilemedi")) {
+      return Icons.face; // Yüz ikonu - yüz tespit sorunu
+    } else if (message.contains("Görüntü işlenemedi")) {
+      return Icons.error; // Hata ikonu - görüntü işleme hatası
+    } else {
+      return Icons.cancel; // Diğer hatalar
+    }
+  }
+
   // Kamera değiştirme fonksiyonu
   Future<void> _switchCamera() async {
     if (cameras == null || cameras!.isEmpty) return;
@@ -243,14 +300,35 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
           idNo = result['id_no'] ?? '';
           birthDate = result['birth_date'] ?? '';
           resultMessage = "Tanınan kişi: $recognizedName";
+          
+          // Tanınan kişiyi listeye ekle ve listeyi görünür yap
+          _addToRecognizedList(recognizedName!, idNo!, birthDate ?? '');
+          _isRecognizedListVisible = true;
         } else if (result['success'] == true && result['recognized'] == false) {
           // Bu kişi zaten tanındı durumu
           recognizedName = result['name'];
           idNo = result['id_no'] ?? '';
           birthDate = result['birth_date'] ?? '';
           resultMessage = "Bu kişi zaten tanındı: $recognizedName";
+          
+          // Tanınan kişiyi listeye ekle ve listeyi görünür yap
+          _addToRecognizedList(recognizedName!, idNo!, birthDate ?? '');
+          _isRecognizedListVisible = true;
         } else {
-          resultMessage = result['message'] ?? "Tanınmayan kişi";
+          // API'den gelen mesajı kontrol et
+          String message = result['message'] ?? "Tanınmayan kişi";
+          
+          // Özel mesajları kontrol et
+          if (message.contains("Sistemde kayıtlı kullanıcı bulunamadı")) {
+            resultMessage = "Sistemde kayıtlı kullanıcı bulunamadı";
+          } else if (message.contains("Yüz tespit edilemedi")) {
+            resultMessage = "Yüz tespit edilemedi";
+          } else if (message.contains("Görüntü işlenemedi")) {
+            resultMessage = "Görüntü işlenemedi";
+          } else {
+            resultMessage = message;
+          }
+          
           recognizedName = null;
           idNo = null;
           birthDate = null;
@@ -405,23 +483,22 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
               ),
 
               // Gerçek zamanlı tanıma kayıtları - sağ alt köşede (açılır/kapanır)
-              if (_realtimeLogs.isNotEmpty)
-                Positioned(
-                  bottom: isLandscape ? 24 : 16,
-                  right: isLandscape ? 24 : 16,
-                  child: AnimatedContainer(
-                    duration: Duration(milliseconds: 300),
-                    width: _isRecognizedListVisible
-                        ? (isLandscape ? 320 : 280)
-                        : (isLandscape ? 100 : 80),
-                    height: _isRecognizedListVisible
-                        ? (isLandscape ? 250 : 300)
-                        : (isLandscape ? 100 : 90),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.greenAccent, width: 2),
-                    ),
+              Positioned(
+                bottom: isLandscape ? 24 : 16,
+                right: isLandscape ? 24 : 16,
+                child: AnimatedContainer(
+                  duration: Duration(milliseconds: 300),
+                  width: _isRecognizedListVisible
+                      ? (isLandscape ? 320 : 280)
+                      : (isLandscape ? 100 : 80),
+                  height: _isRecognizedListVisible
+                      ? (isLandscape ? 250 : 300)
+                      : (isLandscape ? 100 : 90),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.greenAccent, width: 2),
+                  ),
                     child: _isRecognizedListVisible
                         ? Column(
                       children: [
@@ -558,19 +635,32 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          resultMessage!,
-                          style: TextStyle(
-                            fontSize: 20,
-                            color: recognizedName != null ? Colors.greenAccent : Colors.redAccent,
-                            fontWeight: FontWeight.bold,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black,
-                                blurRadius: 8,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getMessageIcon(resultMessage!),
+                              color: _getMessageColor(resultMessage!),
+                              size: 24,
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                resultMessage!,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: _getMessageColor(resultMessage!),
+                                  fontWeight: FontWeight.bold,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      blurRadius: 8,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                         if (recognizedName != null)
                           Padding(
@@ -582,6 +672,24 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
                                 if (idNo != null) Text("Kimlik No: $idNo", style: TextStyle(color: Colors.white)),
                                 if (birthDate != null) Text("Doğum Tarihi: $birthDate", style: TextStyle(color: Colors.white)),
                               ],
+                            ),
+                          ),
+                        if (resultMessage!.contains("Sistemde kayıtlı kullanıcı bulunamadı"))
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              "Kişi sistemde yok, lütfen ekleyiniz",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontStyle: FontStyle.italic,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black,
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                       ],
@@ -625,6 +733,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> {
                             _realtimeLogs.clear();
                             resultMessage = null;
                             recognizedName = null;
+                            _isRecognizedListVisible = false; // Listeyi kapat
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(

@@ -1,10 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:my_faceapp/utils/colors.dart';
 import 'package:my_faceapp/view/home_page.dart';
 
 
     void main() {
+        WidgetsFlutterBinding.ensureInitialized();
+        // Tam ekran yap - saati tamamen gizle
+        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
         runApp(const MyApp());
     }
 
@@ -16,6 +20,19 @@ import 'package:my_faceapp/view/home_page.dart';
             return MaterialApp(
                 debugShowCheckedModeBanner: false,
                 title: 'Flutter Intro Screen',
+                builder: (context, child) {
+                    // Tam ekran ayarları - saati tamamen gizle
+                    SystemChrome.setSystemUIOverlayStyle(
+                        const SystemUiOverlayStyle(
+                            statusBarColor: Colors.transparent,
+                            statusBarIconBrightness: Brightness.light,
+                            systemNavigationBarColor: Colors.transparent,
+                            systemNavigationBarDividerColor: Colors.transparent,
+                            systemNavigationBarIconBrightness: Brightness.light,
+                        ),
+                    );
+                    return child!;
+                },
                 theme: ThemeData(
                     textTheme: const TextTheme(
                         displayLarge: TextStyle(

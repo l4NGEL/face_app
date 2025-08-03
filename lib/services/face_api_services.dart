@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 
 class FaceApiService {
-  static const String baseUrl = 'http://10.106.35.4:5000';// API adresini güncelle!
+  static const String baseUrl = 'http://10.6.2.63:5000';// API adresini güncelle!
 
   static Future<Map<String, dynamic>> recognizeFace(File imageFile) async {
     final imageBase64 = await compressAndEncodeImage(imageFile);
@@ -107,6 +107,107 @@ class FaceApiService {
       return json.decode(response.body)['logs'] ?? [];
     } else {
       throw Exception('Gerçek zamanlı loglar alınamadı');
+    }
+  }
+
+
+
+  static Future<Map<String, dynamic>> recalculateUserEmbeddings(String userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/recalculate_embeddings/$userId'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Embeddings yeniden hesaplanamadı');
+    }
+  }
+
+  static Future<Map<String, dynamic>> recalculateAllEmbeddings() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/recalculate_all_embeddings'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Tüm embeddings yeniden hesaplanamadı');
+    }
+  }
+
+  static Future<Map<String, dynamic>> deleteUserPhoto(String idNo, String filename) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/user_photos/$idNo/$filename'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Fotoğraf silinemedi');
+    }
+  }
+
+  static Future<Map<String, dynamic>> clearUserPhotos(String idNo) async {
+    final response = await http.delete(
+      Uri.parse('$baseUrl/user_photos/$idNo/clear'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Fotoğraflar silinemedi');
+    }
+  }
+
+  static Future<Map<String, dynamic>> uploadUserPhoto(String idNo, File imageFile) async {
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/user_photos/$idNo'),
+      );
+
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+        ),
+      );
+
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+
+      if (response.statusCode == 200) {
+        return json.decode(responseData);
+      } else {
+        throw Exception('Fotoğraf yüklenemedi: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Fotoğraf yüklenemedi: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> fixJsonFile() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/fix_json'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('JSON dosyası düzeltilemedi');
+    }
+  }
+
+  static Future<Map<String, dynamic>> checkJsonStatus() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/check_json_status'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('JSON durumu kontrol edilemedi');
     }
   }
 

@@ -23,11 +23,9 @@ class _HomePageState extends State<HomePage> {
   }
 
 
-  Widget animationDo(
-    int index,
-    int delay,
-    Widget child,
-  ) {
+  Widget animationDo(int index,
+      int delay,
+      Widget child,) {
     if (index == 1) {
       return FadeInDown(
         delay: Duration(milliseconds: delay),
@@ -42,122 +40,139 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    var size = MediaQuery.of(context).size;
-    var textTheme = Theme.of(context).textTheme;
+    var size = MediaQuery
+        .of(context)
+        .size;
+    var textTheme = Theme
+        .of(context)
+        .textTheme;
+
     return Scaffold(
-        body: SizedBox(
-      width: size.width,
-      height: size.height,
-      child: Column(
-        children: [
-          Expanded(
-            flex: 3,
-            child: PageView.builder(
-              controller: pageController,
-              itemCount: listOfItems.length,
-              onPageChanged: (newIndex) {
-                setState(() {
-                  currentIndex = newIndex;
-                });
-              },
-              physics: const BouncingScrollPhysics(),
-              itemBuilder: ((context, index) {
-                return SizedBox(
-                  width: size.width,
-                  height: size.height,
-                  child: Column(
-                    children: [
-                      /// IMG
-                      Container(
-                        margin: const EdgeInsets.fromLTRB(15, 40, 15, 10),
-                        width: size.width,
-                        height: size.height / 2,
-                        child: animationDo(
-                          index,
-                          100,
-                          Image.asset(listOfItems[index].img),
-                        ),
-                      ),
-
-
-                      Padding(
-                          padding: const EdgeInsets.only(top: 25, bottom: 15),
-                          child: animationDo(
-                            index,
-                            300,
-                            Text(
-                              listOfItems[index].title,
-                              textAlign: TextAlign.center,
-                              style: textTheme.displayLarge,
-                            ),
-                          )),
-
-                      /// SUBTITLE TEXT
-                      animationDo(
-                        index,
-                        500,
-                        Text(
-                          listOfItems[index].subTitle,
-                          textAlign: TextAlign.center,
-                          style: textTheme.displayMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }),
-            ),
-          ),
-
-          Expanded(
-            flex: 1,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                /// PAGE INDICATOR
-                SmoothPageIndicator(
+      extendBodyBehindAppBar: true,
+      extendBody: true,
+      body: MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        removeBottom: true,
+        child: SizedBox(
+          width: size.width,
+          height: size.height,
+          child: Column(
+            children: [
+              Expanded(
+                flex: 3,
+                child: PageView.builder(
                   controller: pageController,
-                  count: listOfItems.length,
-                  effect: const ExpandingDotsEffect(
-                    spacing: 6.0,
-                    radius: 10.0,
-                    dotWidth: 10.0,
-                    dotHeight: 10.0,
-                    expansionFactor: 3.8,
-                    dotColor: Colors.grey,
-                    activeDotColor: MyColors.btnColor,
-                  ),
-                  onDotClicked: (newIndex) {
+                  itemCount: listOfItems.length,
+                  onPageChanged: (newIndex) {
                     setState(() {
                       currentIndex = newIndex;
-                      pageController.animateToPage(newIndex,
-                          duration: const Duration(milliseconds: 500),
-                          curve: Curves.ease);
                     });
                   },
+                  physics: const BouncingScrollPhysics(),
+                  itemBuilder: ((context, index) {
+                    return SizedBox(
+                      width: size.width,
+                      height: size.height,
+                      child: Column(
+                        children: [
+
+                          /// IMG - ekranın üstüne bindirme yapacak şekilde margin kaldırıldı
+                          Container(
+                            width: size.width,
+                            height: size.height / 2,
+                            child: animationDo(
+                              index,
+                              100,
+                              Image.asset(
+                                listOfItems[index].img,
+                                fit: BoxFit.cover,
+                                width: size.width,
+                                height: size.height / 2,
+                              ),
+                            ),
+                          ),
+
+                          Padding(
+                            padding: const EdgeInsets.only(top: 25, bottom: 15),
+                            child: animationDo(
+                              index,
+                              300,
+                              Text(
+                                listOfItems[index].title,
+                                textAlign: TextAlign.center,
+                                style: textTheme.displayLarge,
+                              ),
+                            ),
+                          ),
+
+                          /// SUBTITLE TEXT
+                          animationDo(
+                            index,
+                            500,
+                            Text(
+                              listOfItems[index].subTitle,
+                              textAlign: TextAlign.center,
+                              style: textTheme.displayMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                 ),
-                currentIndex == 2
+              ),
 
+              Expanded(
+                flex: 1,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
 
-                    ? GetStartBtn(size: size, textTheme: textTheme)
-
-
-                    : SkipBtn(
-                        size: size,
-                        textTheme: textTheme,
-                        onTap: () {
-                          setState(() {
-                            pageController.animateToPage(2,
-                                duration: const Duration(milliseconds: 1000),
-                                curve: Curves.fastOutSlowIn);
-                          });
-                        },
-                      )
-              ],
-            ),
+                    /// PAGE INDICATOR
+                    SmoothPageIndicator(
+                      controller: pageController,
+                      count: listOfItems.length,
+                      effect: const ExpandingDotsEffect(
+                        spacing: 6.0,
+                        radius: 10.0,
+                        dotWidth: 10.0,
+                        dotHeight: 10.0,
+                        expansionFactor: 3.8,
+                        dotColor: Colors.grey,
+                        activeDotColor: MyColors.btnColor,
+                      ),
+                      onDotClicked: (newIndex) {
+                        setState(() {
+                          currentIndex = newIndex;
+                          pageController.animateToPage(
+                            newIndex,
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.ease,
+                          );
+                        });
+                      },
+                    ),
+                    currentIndex == 2
+                        ? GetStartBtn(size: size, textTheme: textTheme)
+                        : SkipBtn(
+                      size: size,
+                      textTheme: textTheme,
+                      onTap: () {
+                        pageController.animateToPage(
+                          2,
+                          duration: const Duration(milliseconds: 1000),
+                          curve: Curves.fastOutSlowIn,
+                        );
+                      },
+                    )
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
-    ));
+    );
   }
 }

@@ -26,12 +26,12 @@ class _UsersPageState extends State<UsersPage> {
       for (var user in users) {
         final idNo = user['id_no'] ?? user['id'];
         try {
-          print('Kullanıcı fotoğrafları isteniyor: $idNo');
+          print('🔄 Kullanıcı fotoğrafları isteniyor: $idNo');
           final photos = await FaceApiService.getUserPhotos(idNo);
-          print('Alınan fotoğraflar: $photos');
+          print('📸 Alınan fotoğraflar: $photos');
           userPhotos[idNo] = photos;
         } catch (e) {
-          print('Fotoğraf çekme hatası ($idNo): $e');
+          print('❌ Fotoğraf çekme hatası ($idNo): $e');
           userPhotos[idNo] = [];
         }
       }
@@ -102,6 +102,12 @@ class _UsersPageState extends State<UsersPage> {
         final photos = userPhotos[idNo] ?? [];
         final firstPhoto = photos.isNotEmpty ? photos.first : '1.jpg';
         final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$firstPhoto';
+        
+        print('👤 Kullanıcı: ${user['name']}');
+        print('🆔 ID: $idNo');
+        print('📸 Fotoğraflar: $photos');
+        print('🎯 İlk fotoğraf: $firstPhoto');
+        print('🔗 URL: $photoUrl');
 
         return ListTile(
           leading: GestureDetector(
@@ -207,7 +213,7 @@ class _UsersPageState extends State<UsersPage> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
+                  icon: Icon(Icons.delete, color: Colors.red, size: 20),
                   onPressed: () async {
                     final confirm = await showDialog<bool>(
                       context: context,

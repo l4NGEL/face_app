@@ -98,6 +98,9 @@ class _AddUserPageState extends State<AddUserPage> {
     );
     await _controller!.initialize();
 
+    // Flash'ı kapat
+    await _controller!.setFlashMode(FlashMode.off);
+
     // Kamera yönlendirmesini sabitle
     await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
 
@@ -184,6 +187,67 @@ class _AddUserPageState extends State<AddUserPage> {
       await Future.delayed(Duration(milliseconds: 500));
     }
     setState(() { isCapturing = false; });
+  }
+
+  // Fotoğrafı büyütme fonksiyonu
+  void _showImageDialog(File imageFile) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.9),
+            ),
+            child: Stack(
+              children: [
+                // Büyük fotoğraf
+                Center(
+                  child: InteractiveViewer(
+                    child: Image.file(
+                      imageFile,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+                // Kapatma butonu
+                Positioned(
+                  top: 40,
+                  right: 20,
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Fotoğraf silme fonksiyonu
+  void _removeImage(int index) {
+    setState(() {
+      faceImages.removeAt(index);
+      faceCount--;
+    });
   }
 
   Future<void> _saveUser() async {
@@ -355,27 +419,34 @@ class _AddUserPageState extends State<AddUserPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false, // Klavye açıldığında layout'ı yeniden boyutlandırma
-      appBar: AppBar(title: Text('Kişi Kaydet')),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isLandscape = constraints.maxWidth > constraints.maxHeight;
+        extendBodyBehindAppBar: true,
+        extendBody: true,
+        resizeToAvoidBottomInset: false, // Klavye açıldığında layout'ı yeniden boyutlandırma
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: Text('Kişi Kaydet'),
+        ),
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isLandscape = constraints.maxWidth > constraints.maxHeight;
 
-          return SingleChildScrollView(
-            child: isLandscape
-                ? _buildLandscapeLayout(constraints)
-                : _buildPortraitLayout(constraints),
-          );
-        },
-      ),
-    );
+              return SingleChildScrollView(
+                child: isLandscape
+                    ? _buildLandscapeLayout(constraints)
+                    : _buildPortraitLayout(constraints),
+              );
+            },
+          ),
+        ));
   }
 
   Widget _buildPortraitLayout(BoxConstraints constraints) {
     return Column(
       children: [
         Padding(
-          padding: EdgeInsets.all(16),
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 16), // Üstten 80 pixel boşluk ekledim
           child: Column(
             children: [
               TextField(
@@ -485,6 +556,22 @@ class _AddUserPageState extends State<AddUserPage> {
           children: [
             ElevatedButton(
               onPressed: (!isCapturing && faceCount < 5) ? _captureMultipleFaces : null,
+              style: ButtonStyle(
+                elevation: MaterialStateProperty.resolveWith<double>((states) {
+                  if (states.contains(MaterialState.pressed)) {
+                    return 2.0; // Basıldığında düşük elevation
+                  }
+                  return 4.0; // Normal elevation
+                }),
+                shadowColor: MaterialStateProperty.resolveWith<Color>((states) {
+                  if (states.contains(MaterialState.pressed)) {
+                    return Colors.transparent; // Basıldığında gölge yok
+                  }
+                  return Colors.black26; // Normal gölge
+                }),
+                overlayColor: MaterialStateProperty.all(Colors.transparent), // Tıklama rengini şeffaf yap
+                splashFactory: NoSplash.splashFactory, // Tıklama animasyonunu kaldır
+              ),
               child: isCapturing
                   ? Row(children: [
                 SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
@@ -499,10 +586,14 @@ class _AddUserPageState extends State<AddUserPage> {
                 print("Kaydet butonuna tıklandı");
                 _saveUser();
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              style: ButtonStyle(
+                backgroundColor: MaterialStateProperty.all(Colors.teal),
+                foregroundColor: MaterialStateProperty.all(Colors.white),
+                padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                elevation: MaterialStateProperty.all(4.0), // Sabit elevation
+                shadowColor: MaterialStateProperty.all(Colors.black26), // Sabit gölge
+                overlayColor: MaterialStateProperty.all(Colors.transparent), // Tıklama rengini şeffaf yap
+                splashFactory: NoSplash.splashFactory, // Tıklama animasyonunu kaldır
               ),
               child: isSaving
                   ? Row(
@@ -510,7 +601,7 @@ class _AddUserPageState extends State<AddUserPage> {
                 children: [
                   SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                   SizedBox(width: 8),
-                  Text('Kaydediliyor...')
+                  Text('')
                 ],
               )
                   : Text('Kaydet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -519,12 +610,53 @@ class _AddUserPageState extends State<AddUserPage> {
         ),
         SizedBox(height: 8),
         Wrap(
-          children: faceImages
-              .map((img) => Padding(
-            padding: EdgeInsets.all(4),
-            child: Image.file(img, width: 60, height: 60, fit: BoxFit.cover),
-          ))
-              .toList(),
+          children: faceImages.asMap().entries.map((entry) {
+            final index = entry.key;
+            final img = entry.value;
+            return Padding(
+              padding: EdgeInsets.all(4),
+              child: Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => _showImageDialog(img),
+                    child: Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(img, fit: BoxFit.cover),
+                      ),
+                    ),
+                  ),
+                  // Çarpı işareti - sağ üst köşede
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: GestureDetector(
+                      onTap: () => _removeImage(index),
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
         SizedBox(height: 20), // Alt boşluk ekle
       ],
@@ -538,7 +670,7 @@ class _AddUserPageState extends State<AddUserPage> {
         Expanded(
           flex: 1,
           child: Padding(
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.fromLTRB(16, 20, 16, 16), // Üstten 80 pixel boşluk ekledim
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -607,15 +739,24 @@ class _AddUserPageState extends State<AddUserPage> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: (!isCapturing && faceCount < 5) ? _captureMultipleFaces : null,
+                        style: ButtonStyle(
+                          elevation: MaterialStateProperty.resolveWith<double>((states) {
+                            if (states.contains(MaterialState.pressed)) return 2.0;
+                            return 4.0;
+                          }),
+                          shadowColor: MaterialStateProperty.resolveWith<Color>((states) {
+                            if (states.contains(MaterialState.pressed)) return Colors.transparent;
+                            return Colors.black26;
+                          }),
+                          overlayColor: MaterialStateProperty.all(Colors.transparent), // Tıklama rengini şeffaf yap
+                          splashFactory: NoSplash.splashFactory, // Tıklama animasyonunu kaldır
+                        ),
                         child: isCapturing
-                            ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
-                            SizedBox(width: 8),
-                            Text('Çekiliyor...')
-                          ],
-                        )
+                            ? Row(children: [
+                          SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                          SizedBox(width: 8),
+                          Text('Çekiliyor...')
+                        ])
                             : Text('Görüntü Al (5 Fotoğraf)'),
                       ),
                     ),
@@ -626,17 +767,22 @@ class _AddUserPageState extends State<AddUserPage> {
                           print("Kaydet butonuna tıklandı (landscape)");
                           _saveUser();
                         },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        ),
+                                            style: ButtonStyle(
+                      backgroundColor: MaterialStateProperty.all(Colors.teal),
+                      foregroundColor: MaterialStateProperty.all(Colors.white),
+                      padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                      elevation: MaterialStateProperty.all(4.0), // Sabit elevation
+                      shadowColor: MaterialStateProperty.all(Colors.black26), // Sabit gölge
+                      overlayColor: MaterialStateProperty.all(Colors.transparent), // Tıklama rengini şeffaf yap
+                      splashFactory: NoSplash.splashFactory, // Tıklama animasyonunu kaldır
+                    ),
                         child: isSaving
                             ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                             SizedBox(width: 8),
+                            Text('')
                           ],
                         )
                             : Text('Kaydet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -646,12 +792,53 @@ class _AddUserPageState extends State<AddUserPage> {
                 ),
                 SizedBox(height: 16),
                 Wrap(
-                  children: faceImages
-                      .map((img) => Padding(
-                    padding: EdgeInsets.all(4),
-                    child: Image.file(img, width: 50, height: 50, fit: BoxFit.cover),
-                  ))
-                      .toList(),
+                  children: faceImages.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final img = entry.value;
+                    return Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Stack(
+                        children: [
+                          GestureDetector(
+                            onTap: () => _showImageDialog(img),
+                            child: Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(img, fit: BoxFit.cover),
+                              ),
+                            ),
+                          ),
+                          // Çarpı işareti - sağ üst köşede
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: GestureDetector(
+                              onTap: () => _removeImage(index),
+                              child: Container(
+                                width: 18,
+                                height: 18,
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.close,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
                 ),
               ],
             ),

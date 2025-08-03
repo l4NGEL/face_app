@@ -18,7 +18,15 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
   @override
   void initState() {
     super.initState();
-    fetchUsers();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await fetchUsers();
+    // Kullanıcılar yüklendikten sonra tüm logları çek
+    if (users.isNotEmpty) {
+      await fetchRecognitionLogs(null);
+    }
   }
 
   Future<void> fetchUsers() async {
@@ -36,38 +44,43 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
 
   Future<void> fetchRecognitionLogs(String? userId) async {
     try {
+      print('🔍 fetchRecognitionLogs çağrıldı: userId = $userId');
+      
       if (userId == null) {
         // Tüm kullanıcıların loglarını çek
-        print('Tüm kullanıcıların recognition logs çekiliyor');
+        print('📊 Tüm kullanıcıların recognition logs çekiliyor');
         Map<String, List<dynamic>> allLogs = {};
 
         for (var user in users) {
           final idNo = user['id_no'] ?? user['id'];
+          print('👤 Kullanıcı işleniyor: $idNo');
           try {
             final logs = await FaceApiService.getRecognitionLogs(idNo);
+            print('📝 Kullanıcı $idNo için ${logs.length} log bulundu');
             if (logs.isNotEmpty) {
               allLogs[idNo] = logs;
             }
           } catch (e) {
-            print('Kullanıcı $idNo için log çekme hatası: $e');
+            print('❌ Kullanıcı $idNo için log çekme hatası: $e');
           }
         }
 
         setState(() {
           recognitionLogs = allLogs;
         });
-        print('Toplam ${allLogs.length} kullanıcıdan log çekildi');
+        print('✅ Toplam ${allLogs.length} kullanıcıdan log çekildi');
       } else {
         // Tek kullanıcının loglarını çek
-        print('Recognition logs çekiliyor: $userId');
+        print('🎯 Tek kullanıcı recognition logs çekiliyor: $userId');
         final logs = await FaceApiService.getRecognitionLogs(userId);
-        print('Çekilen loglar: ${logs.length} adet');
+        print('📝 Çekilen loglar: ${logs.length} adet');
         setState(() {
           recognitionLogs[userId] = logs;
         });
+        print('✅ Tek kullanıcı logları güncellendi');
       }
     } catch (e) {
-      print('Recognition logs çekme hatası: $e');
+      print('💥 Recognition logs çekme hatası: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Tanıma kayıtları alınamadı: $e')),
       );
@@ -138,14 +151,19 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
           });
         }
       });
+      print('📊 Tüm kullanıcılar için toplam ${allLogs.length} log');
     } else {
       // Tek kullanıcının logları
       allLogs = recognitionLogs[userId] ?? [];
+      print('📊 Kullanıcı $userId için ${allLogs.length} log');
     }
 
-    if (startDate == null && endDate == null) return allLogs;
+    if (startDate == null && endDate == null) {
+      print('📅 Tarih filtresi yok, tüm loglar döndürülüyor');
+      return allLogs;
+    }
 
-    return allLogs.where((log) {
+    final filteredLogs = allLogs.where((log) {
       try {
         final logDate = DateTime.parse(log['datetime']);
         bool include = true;
@@ -160,9 +178,13 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
 
         return include;
       } catch (e) {
+        print('❌ Tarih parse hatası: $e');
         return false;
       }
     }).toList();
+    
+    print('📅 Filtrelenmiş log sayısı: ${filteredLogs.length}');
+    return filteredLogs;
   }
 
   String _formatDateTime(String isoString) {
@@ -217,14 +239,14 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
-            onPressed: () {
+            onPressed: () async {
               setState(() {
                 recognitionLogs.clear();
                 selectedUserId = null;
                 startDate = null;
                 endDate = null;
               });
-              fetchUsers();
+              await _initializeData();
             },
           ),
         ],
@@ -285,12 +307,14 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
               );
             }).toList(),
           ],
-          onChanged: (value) {
-            print('Kullanıcı seçildi: $value');
+          onChanged: (value) async {
+            print('🎯 Kullanıcı seçildi: $value');
             setState(() {
               selectedUserId = value;
             });
-            fetchRecognitionLogs(value);
+            
+            // Kullanıcı seçildikten sonra logları çek
+            await fetchRecognitionLogs(value);
           },
         ),
         SizedBox(height: 16),
@@ -384,12 +408,14 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
                 );
               }).toList(),
             ],
-            onChanged: (value) {
-              print('Kullanıcı seçildi (landscape): $value');
+            onChanged: (value) async {
+              print('🎯 Kullanıcı seçildi (landscape): $value');
               setState(() {
                 selectedUserId = value;
               });
-              fetchRecognitionLogs(value);
+              
+              // Kullanıcı seçildikten sonra logları çek
+              await fetchRecognitionLogs(value);
             },
           ),
         ),
