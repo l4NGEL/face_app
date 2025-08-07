@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
 
 class FaceApiService {
-  static const String baseUrl = 'http://10.6.2.63:5000';// API adresini güncelle!
+  static const String baseUrl = '...';// API adresini güncelle!
 
   static Future<Map<String, dynamic>> recognizeFace(File imageFile) async {
     final imageBase64 = await compressAndEncodeImage(imageFile);
@@ -422,6 +422,7 @@ class FaceApiService {
     final jpg = img.encodeJpg(resized, quality: 90); // Kaliteyi 90'a çıkar
     return 'data:image/jpeg;base64,${base64Encode(jpg)}';
   }
+<<<<<<< HEAD
 
   static Future<Map<String, dynamic>> testCameraQuality(File imageFile) async {
     final imageBase64 = await compressAndEncodeImage(imageFile);
@@ -443,3 +444,6 @@ class FaceApiService {
     return json.decode(response.body);
   }
 }
+=======
+}
+>>>>>>> 11b4b114b98c2ddc6a8d6694b91d7f45c9cfacc9
