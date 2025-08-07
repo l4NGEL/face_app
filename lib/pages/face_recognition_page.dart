@@ -24,15 +24,16 @@ class FocusAreaPainter extends CustomPainter {
       ..color = Colors.black.withOpacity(0.5)
       ..style = PaintingStyle.fill;
 
-    // Ekranı üçe böl - ortadaki bölümü al
-    final verticalThird = size.height / 3;
-    final focusTop = verticalThird;
-    final focusBottom = verticalThird * 2;
+    // Ekranı daha büyük bir alan için böl - ortadaki bölümü al
+    // Dikey olarak 1/4'ten 3/4'e kadar (daha büyük alan)
+    final verticalQuarter = size.height / 4;
+    final focusTop = verticalQuarter;
+    final focusBottom = verticalQuarter * 3;
 
-    // Yatay kısmı dörde böl - 2. ve 3. bölümü al
-    final horizontalQuarter = size.width / 4;
-    final focusLeft = horizontalQuarter;
-    final focusRight = horizontalQuarter * 3;
+    // Yatay olarak 1/6'dan 5/6'ya kadar (daha büyük alan)
+    final horizontalSixth = size.width / 6;
+    final focusLeft = horizontalSixth;
+    final focusRight = horizontalSixth * 5;
 
     // Odaklanma alanını çiz
     final focusRect = Rect.fromLTRB(focusLeft, focusTop, focusRight, focusBottom);
@@ -1479,28 +1480,28 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> with WidgetsB
                   ),
                 )
               : Stack(
-            fit: StackFit.expand,
-            children: [
+                  fit: StackFit.expand,
+                  children: [
                     // 🚀 Kamera preview'ı optimize edilmiş şekilde göster
-              Positioned.fill(
+                    Positioned.fill(
                       child: ClipRect(
                         child: OverflowBox(
                           alignment: Alignment.center,
                           maxWidth: double.infinity,
                           maxHeight: double.infinity,
-                child: FittedBox(
-                  fit: BoxFit.cover,
-                  child: _controller?.value.previewSize == null
-                      ? Container()
-                      : SizedBox(
-                          width: _controller!.value.previewSize!.height,
-                          height: _controller!.value.previewSize!.width,
-                          child: CameraPreview(_controller!),
+                          child: FittedBox(
+                            fit: BoxFit.cover,
+                            child: _controller?.value.previewSize == null
+                                ? Container()
+                                : SizedBox(
+                                    width: _controller!.value.previewSize!.height,
+                                    height: _controller!.value.previewSize!.width,
+                                    child: CameraPreview(_controller!),
                                   ),
                           ),
                         ),
-                ),
-              ),
+                      ),
+                    ),
 
                     // 🚀 Odaklanma alanı göstergesi - ortadaki bölümü vurgula
                     Positioned.fill(
@@ -1621,344 +1622,350 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage> with WidgetsB
                         ),
                       ),
 
-                    // 🚀 Gerçek zamanlı tanıma kayıtları - sağ alt köşede (kapanabilir buton)
-              Positioned(
-                bottom: isLandscape ? 24 : 16,
-                right: isLandscape ? 24 : 16,
-                      child: SafeArea(
-                child: AnimatedContainer(
-                  duration: Duration(milliseconds: 300),
-                  width: _isRecognizedListVisible
-                              ? (isLandscape ? 300 : 280)
-                              : 60,
-                  height: _isRecognizedListVisible
-                              ? (isLandscape ? 200 : 180)
-                              : 60,
-                  decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(_isRecognizedListVisible ? 12 : 30),
-                            border: Border.all(color: Colors.greenAccent.withOpacity(0.3), width: 1),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: Offset(0, 2),
-                              ),
-                            ],
-                  ),
-                    child: _isRecognizedListVisible
-                        ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                                    // 🎯 Başlık ve kapatma butonu
-                        Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.greenAccent.withOpacity(0.2),
-                            borderRadius: BorderRadius.only(
-                                          topLeft: Radius.circular(12),
-                                          topRight: Radius.circular(12),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                                          Icon(Icons.people, color: Colors.greenAccent, size: 16),
-                              SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                              "Tanınanlar (${_realtimeLogs.length})",
-                                  style: TextStyle(
-                                    color: Colors.greenAccent,
-                                                fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                                          IconButton(
-                                            icon: Icon(
-                                              Icons.close,
-                                              color: Colors.greenAccent,
-                                              size: 16,
-                                            ),
-                                            onPressed: () {
-                                  setState(() {
-                                    _isRecognizedListVisible = false;
-                                  });
-                                },
-                                            padding: EdgeInsets.zero,
-                                            constraints: BoxConstraints(),
-                              ),
-                            ],
-                          ),
-                        ),
-                                    // 🎯 Tanınanlar listesi
-                        Expanded(
-                                      child: _realtimeLogs.isEmpty
-                                          ? Center(
-                                              child: Column(
-                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.people_outline,
-                                                    color: Colors.white.withOpacity(0.5),
-                                                    size: 32,
-                                                  ),
-                                                  SizedBox(height: 8),
-                                                  Text(
-                                                    "Henüz tanınan kişi yok",
-                                                    style: TextStyle(
-                                                      color: Colors.white.withOpacity(0.5),
-                                                      fontSize: 12,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            )
-                                          : ListView.builder(
-                                              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            itemCount: _realtimeLogs.length,
-                            itemBuilder: (context, index) {
-                                                final log = _realtimeLogs[_realtimeLogs.length - 1 - index];
-                              return Container(
-                                                  margin: EdgeInsets.only(bottom: 4),
-                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                                    borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      log['name'] ?? 'Bilinmeyen',
-                                      style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 12,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                                      if (log['id_no'] != null)
-                                    Text(
-                                                          "ID: ${log['id_no']}",
-                                                          style: TextStyle(
-                                                            color: Colors.white.withOpacity(0.8),
-                                                            fontSize: 10,
-                                                          ),
-                                                        ),
-                                                      if (log['threshold'] != null)
-                                            Text(
-                                                          "Aktif Threshold: ${(log['threshold'] as double).toStringAsFixed(3)}",
-                                              style: TextStyle(
-                                                            color: _getThresholdColor(log['threshold'] as double),
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    )
-                              : // 🎯 Kapalı durumda buton
-                                GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isRecognizedListVisible = true;
-                        });
-                      },
-                      child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.greenAccent.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(30),
-                                    ),
-                        child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                                          Icons.people,
-                              color: Colors.greenAccent,
-                              size: 24,
-                            ),
-                                        if (_realtimeLogs.isNotEmpty) ...[
-                                          SizedBox(height: 2),
-                                          Container(
-                                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                            decoration: BoxDecoration(
-                                              color: Colors.greenAccent,
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-                                            child: Text(
-                              "${_realtimeLogs.length}",
-                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                              ),
-                              ),
-                            ),
-                                        ],
-                          ],
-                                    ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                    // 🚀 Kamera değiştirme butonu ve zoom slider - sol alt köşede
+                    // 🚀 Gerçek zamanlı tanıma kayıtları - sol alt köşede (kapanabilir buton)
                     Positioned(
                       bottom: isLandscape ? 24 : 16,
                       left: isLandscape ? 24 : 16,
                       child: SafeArea(
                         child: Column(
                           children: [
-                            // 🚀 Zoom Slider - sadece arka kamera için göster (dikey)
-                            if (_controller?.description.lensDirection == CameraLensDirection.back)
-                              Container(
-                                height: isLandscape ? 280 : 220,
-                                width: 70,
-                                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 10),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                    child: Column(
-                      children: [
-                                    Icon(Icons.zoom_in, color: Colors.white, size: 16),
-                                    SizedBox(height: 8),
-                            Expanded(
-                                      child: RotatedBox(
-                                        quarterTurns: 3,
-                                        child: SliderTheme(
-                                          data: SliderTheme.of(context).copyWith(
-                                            activeTrackColor: Colors.greenAccent,
-                                            inactiveTrackColor: Colors.white.withOpacity(0.3),
-                                            thumbColor: Colors.greenAccent,
-                                            overlayColor: Colors.greenAccent.withOpacity(0.2),
-                                            trackHeight: 4,
-                                          ),
-                                          child: Slider(
-                                            value: _pendingZoomLevel,
-                                            min: _minZoomLevel,
-                                            max: _maxZoomLevel,
-                                            divisions: 90,
-                                            onChanged: (value) {
-                                              if (mounted) {
-                                                setState(() {
-                                                  _pendingZoomLevel = value;
-                                                });
-                                              }
-                                              _debouncedSetZoom(value);
-                                            },
-                                            onChangeEnd: (value) {
-                                              _zoomDebounceTimer?.cancel();
-                                              _setZoomLevel(value);
-                                            },
-                                ),
-                              ),
-                            ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Icon(Icons.zoom_out, color: Colors.white, size: 16),
-                                  SizedBox(height: 4),
-                                            Text(
-                                      '${_currentZoomLevel.toStringAsFixed(1)}x',
-                                              style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
+                            // 🚀 Tanıma sıfırlama butonu - tanınanlar listesinin üstünde
+                            Container(
+                              margin: EdgeInsets.only(bottom: 8),
+                              child: ClipOval(
+                                child: Material(
+                                  color: Colors.black.withOpacity(0.6),
+                                  child: InkWell(
+                                    onTap: () async {
+                                      await _resetRecognitionSession();
+                                      if (mounted) {
+                                        setState(() {
+                                          _realtimeLogs.clear();
+                                          _isRecognizedListVisible = false;
+                                        });
+                                      }
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text("Tanıma oturumu sıfırlandı"),
+                                          backgroundColor: Colors.green,
                                         ),
-                              ),
-                            if (_controller?.description.lensDirection == CameraLensDirection.back)
-                              SizedBox(height: 8),
-                            // 🚀 Kamera Değiştirme Butonu
-                            ClipOval(
-                              child: Material(
-                                color: Colors.black.withOpacity(0.6),
-                                child: InkWell(
-                                  onTap: _switchCamera,
-                                  child: SizedBox(
-                                    width: 44,
-                                    height: 44,
-                                    child: Icon(Icons.flip_camera_ios, color: Colors.white, size: 24),
+                                      );
+                                    },
+                                    child: SizedBox(
+                                      width: 44,
+                                      height: 44,
+                                      child: Icon(Icons.refresh, color: Colors.white, size: 24),
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                    // 🚀 Geri butonu - sol üst köşede
-              Positioned(
-                      top: 0,
-                      left: 0,
-                child: SafeArea(
-                        child: Container(
-                          margin: EdgeInsets.only(top: 0, left: 16),
-                  child: ClipOval(
-                    child: Material(
-                              color: Colors.black.withOpacity(0.6),
-                      child: InkWell(
-                                onTap: () => Navigator.pop(context),
-                        child: SizedBox(
-                          width: 44,
-                          height: 44,
-                                  child: Icon(Icons.arrow_back, color: Colors.white, size: 24),
-                                ),
+                            // 🚀 Tanınanlar listesi
+                            AnimatedContainer(
+                              duration: Duration(milliseconds: 300),
+                              width: _isRecognizedListVisible
+                                  ? (isLandscape ? 300 : 280)
+                                  : 60,
+                              height: _isRecognizedListVisible
+                                  ? (isLandscape ? 200 : 180)
+                                  : 60,
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(_isRecognizedListVisible ? 12 : 30),
+                                border: Border.all(color: Colors.greenAccent.withOpacity(0.3), width: 1),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: _isRecognizedListVisible
+                                  ? Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        // 🎯 Başlık ve kapatma butonu
+                                        Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.greenAccent.withOpacity(0.2),
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(12),
+                                              topRight: Radius.circular(12),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.people, color: Colors.greenAccent, size: 16),
+                                              SizedBox(width: 8),
+                                              Expanded(
+                                                child: Text(
+                                                  "Tanınanlar (${_realtimeLogs.length})",
+                                                  style: TextStyle(
+                                                    color: Colors.greenAccent,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                              IconButton(
+                                                icon: Icon(
+                                                  Icons.close,
+                                                  color: Colors.greenAccent,
+                                                  size: 16,
+                                                ),
+                                                onPressed: () {
+                                                  setState(() {
+                                                    _isRecognizedListVisible = false;
+                                                  });
+                                                },
+                                                padding: EdgeInsets.zero,
+                                                constraints: BoxConstraints(),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // 🎯 Tanınanlar listesi
+                                        Expanded(
+                                          child: _realtimeLogs.isEmpty
+                                              ? Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        Icons.people_outline,
+                                                        color: Colors.white.withOpacity(0.5),
+                                                        size: 32,
+                                                      ),
+                                                      SizedBox(height: 8),
+                                                      Text(
+                                                        "Henüz tanınan kişi yok",
+                                                        style: TextStyle(
+                                                          color: Colors.white.withOpacity(0.5),
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                )
+                                              : ListView.builder(
+                                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                  itemCount: _realtimeLogs.length,
+                                                  itemBuilder: (context, index) {
+                                                    final log = _realtimeLogs[_realtimeLogs.length - 1 - index];
+                                                    return Container(
+                                                      margin: EdgeInsets.only(bottom: 4),
+                                                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.white.withOpacity(0.1),
+                                                        borderRadius: BorderRadius.circular(6),
+                                                      ),
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(
+                                                            log['name'] ?? 'Bilinmeyen',
+                                                            style: TextStyle(
+                                                              color: Colors.white,
+                                                              fontSize: 12,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                          if (log['id_no'] != null)
+                                                            Text(
+                                                              "ID: ${log['id_no']}",
+                                                              style: TextStyle(
+                                                                color: Colors.white.withOpacity(0.8),
+                                                                fontSize: 10,
+                                                              ),
+                                                            ),
+                                                          if (log['threshold'] != null)
+                                                            Text(
+                                                              "Aktif Threshold: ${(log['threshold'] as double).toStringAsFixed(3)}",
+                                                              style: TextStyle(
+                                                                color: _getThresholdColor(log['threshold'] as double),
+                                                                fontSize: 10,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                        ),
+                                      ],
+                                    )
+                                  : // 🎯 Kapalı durumda buton
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          _isRecognizedListVisible = true;
+                                        });
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.greenAccent.withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(30),
+                                        ),
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.people,
+                                              color: Colors.greenAccent,
+                                              size: 24,
+                                            ),
+                                            if (_realtimeLogs.isNotEmpty) ...[
+                                              SizedBox(height: 2),
+                                              Container(
+                                                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.greenAccent,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Text(
+                                                  "${_realtimeLogs.length}",
+                                                  style: TextStyle(
+                                                    color: Colors.black,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                ),
-              ),
 
-                    // 🚀 Oturum sıfırlama butonu - sağ üst köşede
-              Positioned(
-                      top: 0,
-                      right: 0,
-                child: SafeArea(
-                        child: Container(
-                          margin: EdgeInsets.only(top: 0, right: 16),
-                          child: ClipOval(
-                        child: Material(
-                              color: Colors.black.withOpacity(0.6),
-                          child: InkWell(
-                            onTap: () async {
-                              await _resetRecognitionSession();
-                                  if (mounted) {
-                              setState(() {
-                                _realtimeLogs.clear();
-                                _isRecognizedListVisible = false;
-                              });
-                                  }
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                      content: Text("Tanıma oturumu sıfırlandı"),
-                                      backgroundColor: Colors.green,
-                                ),
-                              );
-                            },
-                            child: SizedBox(
-                              width: 44,
-                              height: 44,
-                                  child: Icon(Icons.refresh, color: Colors.white, size: 24),
+                    // 🚀 Zoom Slider - sağ alt köşede (sadece arka kamera için göster)
+                    if (_controller?.description.lensDirection == CameraLensDirection.back)
+                      Positioned(
+                        bottom: 0,
+                        right: isLandscape ? 24 : 16,
+                        top: 0,
+                        child: SafeArea(
+                          child: Center(
+                            child: Container(
+                              height: isLandscape ? 320 : 280,
+                              width: 40,
+                              padding: EdgeInsets.symmetric(vertical: 20, horizontal: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.6),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.zoom_in, color: Colors.white, size: 14),
+                                  SizedBox(height: 12),
+                                  Expanded(
+                                    child: RotatedBox(
+                                      quarterTurns: 3,
+                                      child: SliderTheme(
+                                        data: SliderTheme.of(context).copyWith(
+                                          activeTrackColor: Colors.greenAccent,
+                                          inactiveTrackColor: Colors.white.withOpacity(0.3),
+                                          thumbColor: Colors.greenAccent,
+                                          overlayColor: Colors.greenAccent.withOpacity(0.2),
+                                          trackHeight: 3,
+                                        ),
+                                        child: Slider(
+                                          value: _pendingZoomLevel,
+                                          min: _minZoomLevel,
+                                          max: _maxZoomLevel,
+                                          divisions: 90,
+                                          onChanged: (value) {
+                                            if (mounted) {
+                                              setState(() {
+                                                _pendingZoomLevel = value;
+                                              });
+                                            }
+                                            _debouncedSetZoom(value);
+                                          },
+                                          onChangeEnd: (value) {
+                                            _zoomDebounceTimer?.cancel();
+                                            _setZoomLevel(value);
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 12),
+                                  Icon(Icons.zoom_out, color: Colors.white, size: 14),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    '${_currentZoomLevel.toStringAsFixed(1)}x',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                  ),
-                ),
-              ),
-            ],
-          );
+
+                    // 🚀 Kamera Değiştirme Butonu - sağ üst köşede
+                    Positioned(
+                      top: 0,
+                      right: 0,
+                      child: SafeArea(
+                        child: Container(
+                          margin: EdgeInsets.only(top: 0, right: 16),
+                          child: ClipOval(
+                            child: Material(
+                              color: Colors.black.withOpacity(0.6),
+                              child: InkWell(
+                                onTap: _switchCamera,
+                                child: SizedBox(
+                                  width: 44,
+                                  height: 44,
+                                  child: Icon(Icons.flip_camera_ios, color: Colors.white, size: 24),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // 🚀 Geri butonu - sol üst köşede
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      child: SafeArea(
+                        child: Container(
+                          margin: EdgeInsets.only(top: 0, left: 16),
+                          child: ClipOval(
+                            child: Material(
+                              color: Colors.black.withOpacity(0.6),
+                              child: InkWell(
+                                onTap: () => Navigator.pop(context),
+                                child: SizedBox(
+                                  width: 44,
+                                  height: 44,
+                                  child: Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
         },
       ),
     );
