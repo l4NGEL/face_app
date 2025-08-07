@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:my_faceapp/utils/colors.dart';
 import 'package:my_faceapp/view/home_page.dart';
 
@@ -20,6 +21,17 @@ import 'package:my_faceapp/view/home_page.dart';
             return MaterialApp(
                 debugShowCheckedModeBanner: false,
                 title: 'Flutter Intro Screen',
+                // 🎯 Localization desteği ekledik
+                localizationsDelegates: const [
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: const [
+                    Locale('tr', 'TR'), // Türkçe
+                    Locale('en', 'US'), // İngilizce
+                ],
+                locale: const Locale('tr', 'TR'), // Varsayılan dil
                 builder: (context, child) {
                     // Tam ekran ayarları - saati tamamen gizle
                     SystemChrome.setSystemUIOverlayStyle(

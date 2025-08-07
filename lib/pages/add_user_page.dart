@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 import '../services/face_api_services.dart';
+import '../services/connectivity_service.dart';
 import 'home_page.dart'; // Doğru home page import'u
 
 // Tarih formatı için özel input formatter
@@ -41,7 +42,7 @@ class AddUserPage extends StatefulWidget {
   State<AddUserPage> createState() => _AddUserPageState();
 }
 
-class _AddUserPageState extends State<AddUserPage> {
+class _AddUserPageState extends State<AddUserPage> with WidgetsBindingObserver {
   CameraController? _controller;
   List<CameraDescription>? cameras;
   int _currentCameraIndex = 0; // Kamera indeksi eklendi
@@ -54,6 +55,10 @@ class _AddUserPageState extends State<AddUserPage> {
   bool isCapturing = false;
   bool isSaving = false; // Save button loading state
 
+  // 🎯 İnternet bağlantısı kontrolü
+  final ConnectivityService _connectivityService = ConnectivityService();
+  bool _isConnected = true;
+
   // Focus node'ları ekle
   final FocusNode _nameFocusNode = FocusNode();
   final FocusNode _idNoFocusNode = FocusNode();
@@ -62,7 +67,48 @@ class _AddUserPageState extends State<AddUserPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkInternetConnection();
+    _connectivityService.startListening();
     _initCamera();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _connectivityService.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _checkInternetConnection();
+    }
+  }
+
+  Future<void> _checkInternetConnection() async {
+    final isConnected = await _connectivityService.checkInternetConnection();
+    if (!isConnected && mounted) {
+      setState(() {
+        _isConnected = false;
+      });
+      ConnectivityService.showNoInternetDialog(context);
+    } else {
+      setState(() {
+        _isConnected = true;
+      });
+    }
+  }
+
+  void _navigateWithInternetCheck(VoidCallback navigation) async {
+    final isConnected = await _connectivityService.checkInternetConnection();
+    if (!isConnected) {
+      ConnectivityService.showNoInternetSnackBar(context);
+      return;
+    }
+    navigation();
   }
 
   Future<void> _initCamera() async {
@@ -401,19 +447,6 @@ class _AddUserPageState extends State<AddUserPage> {
         isSaving = false;
       });
     }
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    nameController.dispose();
-    idNoController.dispose();
-    birthDateController.dispose();
-    // Focus node'ları dispose et
-    _nameFocusNode.dispose();
-    _idNoFocusNode.dispose();
-    _birthDateFocusNode.dispose();
-    super.dispose();
   }
 
   @override

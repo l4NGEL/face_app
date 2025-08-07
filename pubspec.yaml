@@ -18,7 +18,12 @@ dependencies:
   cupertino_icons: ^1.0.2
   animate_do: any
   smooth_page_indicator: ^1.0.0+2
-
+  flutter_launcher_icons: ^0.14.4
+  http: ^1.1.0
+  connectivity_plus: ^5.0.2
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -33,5 +38,10 @@ flutter:
     - assets/face2.png
     - assets/face3.png
     - assets/face4.png
-    - assets/logo.png
+    - assets/icon.png
     - assets/face_detection_front.tflite
+
+flutter_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon.png"

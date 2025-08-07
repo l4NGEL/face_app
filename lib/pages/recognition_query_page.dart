@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../services/face_api_services.dart';
+import '../services/connectivity_service.dart';
 
 class RecognitionQueryPage extends StatefulWidget {
   @override
   _RecognitionQueryPageState createState() => _RecognitionQueryPageState();
 }
 
-class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
+class _RecognitionQueryPageState extends State<RecognitionQueryPage> with WidgetsBindingObserver {
   List<dynamic> users = [];
   Map<String, List<dynamic>> recognitionLogs = {};
   bool isLoading = true;
@@ -15,10 +16,55 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
   DateTime? startDate;
   DateTime? endDate;
 
+  // 🎯 İnternet bağlantısı kontrolü
+  final ConnectivityService _connectivityService = ConnectivityService();
+  bool _isConnected = true;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _checkInternetConnection();
+    _connectivityService.startListening();
     _initializeData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _connectivityService.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _checkInternetConnection();
+    }
+  }
+
+  Future<void> _checkInternetConnection() async {
+    final isConnected = await _connectivityService.checkInternetConnection();
+    if (!isConnected && mounted) {
+      setState(() {
+        _isConnected = false;
+      });
+      ConnectivityService.showNoInternetDialog(context);
+    } else {
+      setState(() {
+        _isConnected = true;
+      });
+    }
+  }
+
+  void _navigateWithInternetCheck(VoidCallback navigation) async {
+    final isConnected = await _connectivityService.checkInternetConnection();
+    if (!isConnected) {
+      ConnectivityService.showNoInternetSnackBar(context);
+      return;
+    }
+    navigation();
   }
 
   Future<void> _initializeData() async {
@@ -123,18 +169,32 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStartDate ? DateTime.now().subtract(Duration(days: 7)) : DateTime.now(),
+      initialDate: isStartDate 
+          ? (startDate ?? DateTime.now().subtract(Duration(days: 7)))
+          : (endDate ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      locale: const Locale('tr', 'TR'), // 🎯 Türkçe tarih formatı - artık destekleniyor
     );
+    
     if (picked != null) {
       setState(() {
         if (isStartDate) {
           startDate = picked;
+          // 🎯 Başlangıç tarihi seçildiğinde, bitiş tarihi başlangıçtan küçükse temizle
+          if (endDate != null && endDate!.isBefore(picked)) {
+            endDate = null;
+          }
         } else {
           endDate = picked;
+          // 🎯 Bitiş tarihi seçildiğinde, başlangıç tarihi bitişten büyükse temizle
+          if (startDate != null && startDate!.isAfter(picked)) {
+            startDate = null;
+          }
         }
       });
+      
+      print('📅 ${isStartDate ? "Başlangıç" : "Bitiş"} tarihi seçildi: ${picked.day}/${picked.month}/${picked.year}');
     }
   }
 
@@ -163,22 +223,62 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
       return allLogs;
     }
 
+    print('🎯 Tarih filtreleme başlıyor:');
+    print('   Başlangıç tarihi: ${startDate?.day}/${startDate?.month}/${startDate?.year}');
+    print('   Bitiş tarihi: ${endDate?.day}/${endDate?.month}/${endDate?.year}');
+
     final filteredLogs = allLogs.where((log) {
       try {
-        final logDate = DateTime.parse(log['datetime']);
-        bool include = true;
-
-        if (startDate != null) {
-          include = include && logDate.isAfter(startDate!.subtract(Duration(days: 1)));
+        // 🎯 datetime alanını kontrol et - farklı formatlar olabilir
+        String? dateString = log['datetime'] ?? log['timestamp'] ?? log['date'];
+        if (dateString == null) {
+          print('❌ Tarih alanı bulunamadı: ${log.keys}');
+          return false;
         }
 
+        DateTime logDate;
+        
+        // 🎯 Farklı tarih formatlarını destekle
+        if (dateString.contains('T')) {
+          // ISO format: "2024-01-15T10:30:00"
+          logDate = DateTime.parse(dateString);
+        } else if (dateString.contains('-')) {
+          // Date format: "2024-01-15"
+          logDate = DateTime.parse(dateString);
+        } else {
+          // Unix timestamp veya diğer formatlar
+          try {
+            final timestamp = int.tryParse(dateString);
+            if (timestamp != null) {
+              logDate = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+            } else {
+              logDate = DateTime.parse(dateString);
+            }
+          } catch (e) {
+            print('❌ Tarih parse hatası: $dateString - $e');
+            return false;
+          }
+        }
+
+        bool include = true;
+
+        // 🎯 Başlangıç tarihi kontrolü - gün bazında
+        if (startDate != null) {
+          final startOfDay = DateTime(startDate!.year, startDate!.month, startDate!.day);
+          final logStartOfDay = DateTime(logDate.year, logDate.month, logDate.day);
+          include = include && (logStartOfDay.isAtSameMomentAs(startOfDay) || logStartOfDay.isAfter(startOfDay));
+        }
+
+        // 🎯 Bitiş tarihi kontrolü - gün bazında
         if (endDate != null) {
-          include = include && logDate.isBefore(endDate!.add(Duration(days: 1)));
+          final endOfDay = DateTime(endDate!.year, endDate!.month, endDate!.day, 23, 59, 59);
+          final logStartOfDay = DateTime(logDate.year, logDate.month, logDate.day);
+          include = include && (logStartOfDay.isAtSameMomentAs(DateTime(endDate!.year, endDate!.month, endDate!.day)) || logStartOfDay.isBefore(endOfDay));
         }
 
         return include;
       } catch (e) {
-        print('❌ Tarih parse hatası: $e');
+        print('❌ Tarih parse hatası: $e - Log: ${log['datetime'] ?? log['timestamp'] ?? log['date']}');
         return false;
       }
     }).toList();
@@ -494,17 +594,85 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> {
             Text(
               selectedUserId == null
                   ? 'Hiç tanıma kaydı bulunamadı'
-                  : 'Bu tarih aralığında tanıma kaydı bulunamadı',
+                  : _getEmptyMessage(),
               style: TextStyle(fontSize: 16, color: Colors.grey),
+              textAlign: TextAlign.center,
             ),
+            if (startDate != null || endDate != null) ...[
+              SizedBox(height: 8),
+              Text(
+                _getDateRangeText(),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ],
         ),
       );
     }
 
-    return isLandscape
-        ? _buildLandscapeLogsList(logs)
-        : _buildPortraitLogsList(logs);
+    return Column(
+      children: [
+        // 🎯 Filtreleme bilgisi
+        if (startDate != null || endDate != null)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.blue[50],
+            child: Row(
+              children: [
+                Icon(Icons.filter_list, size: 16, color: Colors.blue[700]),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '📅 ${_getDateRangeText()} - ${logs.length} kayıt bulundu',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      startDate = null;
+                      endDate = null;
+                    });
+                  },
+                  child: Icon(Icons.clear, size: 16, color: Colors.blue[700]),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: isLandscape
+              ? _buildLandscapeLogsList(logs)
+              : _buildPortraitLogsList(logs),
+        ),
+      ],
+    );
+  }
+
+  // 🎯 Tarih aralığı metni
+  String _getDateRangeText() {
+    if (startDate != null && endDate != null) {
+      return '${startDate!.day}/${startDate!.month}/${startDate!.year} - ${endDate!.day}/${endDate!.month}/${endDate!.year}';
+    } else if (startDate != null) {
+      return '${startDate!.day}/${startDate!.month}/${startDate!.year} tarihinden itibaren';
+    } else if (endDate != null) {
+      return '${endDate!.day}/${endDate!.month}/${endDate!.year} tarihine kadar';
+    }
+    return '';
+  }
+
+  // 🎯 Boş mesaj metni
+  String _getEmptyMessage() {
+    if (startDate != null || endDate != null) {
+      return 'Bu tarih aralığında tanıma kaydı bulunamadı';
+    } else {
+      return 'Bu kullanıcı için tanıma kaydı bulunamadı';
+    }
   }
 
   Widget _buildPortraitLogsList(List<dynamic> logs) {

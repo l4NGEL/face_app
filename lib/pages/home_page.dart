@@ -5,10 +5,54 @@ import 'add_user_page.dart';
 import 'users_log_page.dart';
 import 'recognition_query_page.dart';
 import '../services/face_api_services.dart';
+import '../services/connectivity_service.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
   final Color greenColor = const Color(0xFF57b236);
   final Color borderColor = const Color(0xFF28283f);
+  final ConnectivityService _connectivityService = ConnectivityService();
+  bool _isConnected = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkInternetConnection();
+    _connectivityService.startListening();
+  }
+
+  @override
+  void dispose() {
+    _connectivityService.dispose();
+    super.dispose();
+  }
+
+  Future<void> _checkInternetConnection() async {
+    final isConnected = await _connectivityService.checkInternetConnection();
+    if (!isConnected && mounted) {
+      setState(() {
+        _isConnected = false;
+      });
+      ConnectivityService.showNoInternetDialog(context);
+    } else {
+      setState(() {
+        _isConnected = true;
+      });
+    }
+  }
+
+  void _navigateWithInternetCheck(VoidCallback navigation) async {
+    final isConnected = await _connectivityService.checkInternetConnection();
+    if (!isConnected) {
+      ConnectivityService.showNoInternetSnackBar(context);
+      return;
+    }
+    navigation();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,16 +60,16 @@ class HomePage extends StatelessWidget {
       extendBodyBehindAppBar: true,
       extendBody: true,
       body: LayoutBuilder(
-          builder: (context, constraints) {
-            final isLandscape = constraints.maxWidth > constraints.maxHeight;
+        builder: (context, constraints) {
+          final isLandscape = constraints.maxWidth > constraints.maxHeight;
 
-            return Center(
-              child: isLandscape
-                  ? _buildLandscapeLayout(context, constraints)
-                  : _buildPortraitLayout(context, constraints),
-            );
-          },
-        ),
+          return Center(
+            child: isLandscape
+                ? _buildLandscapeLayout(context, constraints)
+                : _buildPortraitLayout(context, constraints),
+          );
+        },
+      ),
     );
   }
 
@@ -46,50 +90,52 @@ class HomePage extends StatelessWidget {
             _buildButton(
               icon: Icons.face,
               label: 'Yüz Tanıma Yap',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => FaceRecognitionPage()),
-              ),
+              onPressed: () => _navigateWithInternetCheck(() {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => FaceRecognitionPage()),
+                );
+              }),
               width: constraints.maxWidth * 0.7,
             ),
             SizedBox(height: constraints.maxHeight * 0.016),
             _buildButton(
               icon: Icons.person_add,
               label: 'Kişi Kaydet',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AddUserPage()),
-              ),
+              onPressed: () => _navigateWithInternetCheck(() {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => AddUserPage()),
+                );
+              }),
               width: constraints.maxWidth * 0.7,
             ),
             SizedBox(height: constraints.maxHeight * 0.016),
             _buildButton(
               icon: Icons.people,
               label: 'Kullanıcıları Görüntüle',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => UsersPage()),
-              ),
+              onPressed: () => _navigateWithInternetCheck(() {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => UsersPage()),
+                );
+              }),
               width: constraints.maxWidth * 0.7,
             ),
             SizedBox(height: constraints.maxHeight * 0.016),
             _buildButton(
               icon: Icons.search,
               label: 'Tanıma Sorgula',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => RecognitionQueryPage()),
-              ),
+              onPressed: () => _navigateWithInternetCheck(() {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RecognitionQueryPage()),
+                );
+              }),
               width: constraints.maxWidth * 0.7,
             ),
 
             SizedBox(height: constraints.maxHeight * 0.03),
-
-            // Alt logo
-            Image.asset(
-              'assets/logo.png',
-              height: constraints.maxHeight * 0.03,
-            ),
           ],
         ),
         
@@ -141,6 +187,55 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
+
+        // İnternet bağlantısı uyarısı (üstte)
+        if (!_isConnected)
+          Positioned(
+            top: 60,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.wifi_off, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'İnternet bağlantısı yok!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _checkInternetConnection,
+                    child: Text(
+                      'Tekrar Dene',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -161,11 +256,6 @@ class HomePage extends StatelessWidget {
                     height: constraints.maxHeight * 0.4,
                   ),
                   SizedBox(height: constraints.maxHeight * 0.02),
-                  Image.asset(
-                    'assets/logo.png',
-                    height: constraints.maxHeight * 0.05,
-                  ),
-                  SizedBox(height: constraints.maxHeight * 0.1),
                 ],
               ),
             ),
@@ -179,40 +269,48 @@ class HomePage extends StatelessWidget {
                   _buildButton(
                     icon: Icons.face,
                     label: 'Yüz Tanıma Yap',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => FaceRecognitionPage()),
-                    ),
+                    onPressed: () => _navigateWithInternetCheck(() {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => FaceRecognitionPage()),
+                      );
+                    }),
                     width: constraints.maxWidth * 0.25,
                   ),
                   SizedBox(height: constraints.maxHeight * 0.02),
                   _buildButton(
                     icon: Icons.person_add,
                     label: 'Kişi Kaydet',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => AddUserPage()),
-                    ),
+                    onPressed: () => _navigateWithInternetCheck(() {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => AddUserPage()),
+                      );
+                    }),
                     width: constraints.maxWidth * 0.25,
                   ),
                   SizedBox(height: constraints.maxHeight * 0.02),
                   _buildButton(
                     icon: Icons.people,
                     label: 'Kullanıcıları Görüntüle',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => UsersPage()),
-                    ),
+                    onPressed: () => _navigateWithInternetCheck(() {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => UsersPage()),
+                      );
+                    }),
                     width: constraints.maxWidth * 0.25,
                   ),
                   SizedBox(height: constraints.maxHeight * 0.02),
                   _buildButton(
                     icon: Icons.search,
                     label: 'Tanıma Sorgula',
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => RecognitionQueryPage()),
-                    ),
+                    onPressed: () => _navigateWithInternetCheck(() {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => RecognitionQueryPage()),
+                      );
+                    }),
                     width: constraints.maxWidth * 0.25,
                   ),
                 ],
@@ -269,6 +367,55 @@ class HomePage extends StatelessWidget {
             ),
           ),
         ),
+
+        // İnternet bağlantısı uyarısı (landscape - üstte)
+        if (!_isConnected)
+          Positioned(
+            top: 16,
+            left: 16,
+            right: 200, // Çıkış butonunun solunda
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'İnternet bağlantısı yok!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _checkInternetConnection,
+                    child: Text(
+                      'Tekrar Dene',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }

@@ -199,6 +199,76 @@ class FaceApiService {
     }
   }
 
+  // Threshold bilgilerini al
+  static Future<Map<String, dynamic>> getThresholdInfo() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/threshold_info'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Threshold bilgileri alınamadı');
+    }
+  }
+
+  // Threshold istatistiklerini sıfırla
+  static Future<Map<String, dynamic>> resetThresholdStats() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/reset_threshold_stats'),
+      headers: {'Content-Type': 'application/json'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Threshold istatistikleri sıfırlanamadı');
+    }
+  }
+
+  // Manuel threshold ayarı
+  static Future<Map<String, dynamic>> adjustThreshold(double threshold) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/adjust_threshold'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'threshold': threshold}),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Threshold ayarlanamadı');
+    }
+  }
+
+  // Görüntü kalitesi analizi
+  static Future<Map<String, dynamic>> analyzeImageQuality(File imageFile) async {
+    final imageBase64 = await compressAndEncodeImage(imageFile);
+    final response = await http.post(
+      Uri.parse('$baseUrl/analyze_image_quality'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'image': imageBase64}),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Görüntü kalitesi analiz edilemedi');
+    }
+  }
+
+  // Dinamik threshold test
+  static Future<Map<String, dynamic>> testDynamicThreshold(File imageFile) async {
+    final imageBase64 = await compressAndEncodeImage(imageFile);
+    final response = await http.post(
+      Uri.parse('$baseUrl/test_dynamic_threshold'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'image': imageBase64}),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Dinamik threshold test edilemedi');
+    }
+  }
+
   static Future<Map<String, dynamic>> checkJsonStatus() async {
     final response = await http.get(
       Uri.parse('$baseUrl/check_json_status'),
@@ -244,6 +314,34 @@ class FaceApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> deleteUserPhotos(String idNo, List<String> photoNames) async {
+    try {
+      print('Fotoğraf silme API çağrısı: $baseUrl/user_photos/$idNo/delete');
+      print('Silinecek fotoğraflar: $photoNames');
+
+      final response = await http.post(
+        Uri.parse('$baseUrl/user_photos/$idNo/delete'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'photo_names': photoNames}),
+      );
+
+      print('Silme API yanıt kodu: ${response.statusCode}');
+      print('Silme API yanıtı: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('Silme başarılı: ${data['deleted_count']} fotoğraf silindi');
+        return data;
+      } else {
+        print('Silme API hatası: ${response.statusCode} - ${response.body}');
+        throw Exception('Fotoğraflar silinemedi: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Silme hatası yakalandı: $e');
+      throw Exception('Fotoğraflar silinemedi: $e');
+    }
+  }
+
   static Future<Map<String, dynamic>> deleteUser(String userId) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/delete_user/$userId'),
@@ -252,11 +350,96 @@ class FaceApiService {
     return json.decode(response.body);
   }
 
+  static Future<Map<String, dynamic>> updateUserName(String userId, String newName) async {
+    try {
+      print('🔄 updateUserName çağrıldı: userId=$userId, newName=$newName');
+      print('🔗 API URL: $baseUrl/update_user_name/$userId');
+      
+      final response = await http.put(
+        Uri.parse('$baseUrl/update_user_name/$userId'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'name': newName}),
+      );
+      
+      print('📡 API yanıt kodu: ${response.statusCode}');
+      print('📄 API yanıtı: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        print('✅ Başarılı güncelleme: $result');
+        return result;
+      } else {
+        print('❌ API hatası: ${response.statusCode} - ${response.body}');
+        return {
+          'success': false,
+          'message': 'Kullanıcı adı güncellenemedi: ${response.statusCode} - ${response.body}',
+        };
+      }
+    } catch (e) {
+      print('❌ updateUserName hatası: $e');
+      return {
+        'success': false,
+        'message': 'Kullanıcı adı güncellenemedi: $e',
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> optimizeThreshold() async {
+    try {
+      print('🔧 Threshold optimizasyonu başlatılıyor...');
+      
+      final response = await http.post(
+        Uri.parse('$baseUrl/optimize_threshold'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({}),
+      );
+      
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        print('✅ Threshold optimizasyonu tamamlandı: ${result['optimal_threshold']}');
+        return result;
+      } else {
+        print('❌ Threshold optimizasyonu başarısız: ${response.statusCode}');
+        return {
+          'success': false,
+          'message': 'Threshold optimizasyonu başarısız: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      print('❌ Threshold optimizasyonu hatası: $e');
+      return {
+        'success': false,
+        'message': 'Threshold optimizasyonu hatası: $e',
+      };
+    }
+  }
+
 
   static Future<String> compressAndEncodeImage(File imageFile) async {
     final image = img.decodeImage(await imageFile.readAsBytes());
-    final resized = img.copyResize(image!, width: 800, height: 800);
-    final jpg = img.encodeJpg(resized, quality: 85);
+    // Yüksek kalite için daha büyük boyut ve daha yüksek kalite
+    final resized = img.copyResize(image!, width: 1024, height: 1024);
+    final jpg = img.encodeJpg(resized, quality: 90); // Kaliteyi 90'a çıkar
     return 'data:image/jpeg;base64,${base64Encode(jpg)}';
+  }
+
+  static Future<Map<String, dynamic>> testCameraQuality(File imageFile) async {
+    final imageBase64 = await compressAndEncodeImage(imageFile);
+    final response = await http.post(
+      Uri.parse('$baseUrl/test_camera_quality'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'image': imageBase64}),
+    );
+    return json.decode(response.body);
+  }
+
+  static Future<Map<String, dynamic>> testThreshold(File imageFile) async {
+    final imageBase64 = await compressAndEncodeImage(imageFile);
+    final response = await http.post(
+      Uri.parse('$baseUrl/test_threshold'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode({'image': imageBase64}),
+    );
+    return json.decode(response.body);
   }
 }
