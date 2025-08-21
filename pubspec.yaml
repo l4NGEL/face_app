@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   camera: ^0.10.5+2
+  camera_web: ^0.3.2+4   # web tarafını netleştirir
   path_provider: ^2.1.2
   image_picker: ^1.1.0
   tflite_flutter: ^0.10.3

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'face_recognition_page.dart';
 import 'add_user_page.dart';
 import 'users_log_page.dart';
 import 'recognition_query_page.dart';
 import '../services/face_api_services.dart';
 import '../services/connectivity_service.dart';
+import '../utils/colors.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -52,6 +54,53 @@ class _HomePageState extends State<HomePage> {
       return;
     }
     navigation();
+  }
+
+  // Web kamera test et
+  void _testWebCamera() async {
+    try {
+      final result = await FaceApiService.testWebCamera();
+      
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Web Kamera Test Sonucu'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Durum: ${result['message']}'),
+                if (result['success'] && result['status'] != null) ...[
+                  SizedBox(height: 8),
+                  Text('Kamera Sayısı: ${result['status']['count']}'),
+                  Text('İzinler: ${result['status']['permissions'] ? 'Verildi' : 'Verilmedi'}'),
+                ],
+                if (result['error'] != null) ...[
+                  SizedBox(height: 8),
+                  Text('Hata: ${result['error']}'),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Tamam'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Kamera test hatası: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -134,6 +183,18 @@ class _HomePageState extends State<HomePage> {
               }),
               width: constraints.maxWidth * 0.7,
             ),
+
+            // Web platformunda kamera test butonu
+            if (kIsWeb) ...[
+              SizedBox(height: constraints.maxHeight * 0.016),
+              _buildButton(
+                icon: Icons.camera_alt,
+                label: 'Web Kamera Test',
+                onPressed: () => _testWebCamera(),
+                width: constraints.maxWidth * 0.7,
+                backgroundColor: Colors.orange,
+              ),
+            ],
 
             SizedBox(height: constraints.maxHeight * 0.03),
           ],
@@ -425,6 +486,7 @@ class _HomePageState extends State<HomePage> {
     required String label,
     required VoidCallback onPressed,
     required double width,
+    Color? backgroundColor,
   }) {
     return SizedBox(
       width: width,
@@ -437,7 +499,7 @@ class _HomePageState extends State<HomePage> {
         ),
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
-          backgroundColor: Colors.white,
+          backgroundColor: backgroundColor ?? Colors.white,
           side: BorderSide(color: Colors.teal, width: 4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
