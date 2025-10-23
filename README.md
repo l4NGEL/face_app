@@ -870,28 +870,5 @@ copies or substantial portions of the Software.
 
 ---
 
-## İletişim
-
-- **Proje Sahibi**: [Your Name](https://github.com/yourusername)
-- **Email**: your.email@example.com
-- **LinkedIn**: [Your LinkedIn](https://linkedin.com/in/yourusername)
-- **Twitter**: [@yourusername](https://twitter.com/yourusername)
-
----
-
-## Teşekkürler
-
-- **Flutter Team** - Harika framework için
-- **Dart Team** - Güçlü dil için
-- **Open Source Community** - Sürekli gelişim için
-- **Contributors** - Katkılarınız için
-
----
-
-<div align="center">
-
-**Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!**
-
-Made with ❤️ by [Your Name](https://github.com/yourusername)
 
 </div>
