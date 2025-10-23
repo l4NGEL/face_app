@@ -16,7 +16,7 @@ class ConnectivityService {
   // İnternet bağlantısı durumunu dinlemeye başla
   void startListening() {
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
-      (ConnectivityResult result) {
+          (ConnectivityResult result) {
         _isConnected = result != ConnectivityResult.none;
         print('🌐 İnternet bağlantısı durumu: ${_isConnected ? 'Bağlı' : 'Bağlantı yok'}');
       },

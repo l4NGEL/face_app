@@ -100,7 +100,7 @@ class _UsersPageState extends State<UsersPage> with WidgetsBindingObserver {
 
   Future<void> editUserName(String idNo, String currentName) async {
     final TextEditingController nameController = TextEditingController(text: currentName);
-    
+
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -143,7 +143,7 @@ class _UsersPageState extends State<UsersPage> with WidgetsBindingObserver {
       try {
         // API'ye kullanıcı adını güncelleme isteği gönder
         final updateResult = await FaceApiService.updateUserName(idNo, result);
-        
+
         if (updateResult['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -175,13 +175,13 @@ class _UsersPageState extends State<UsersPage> with WidgetsBindingObserver {
     try {
       // Kullanıcının tüm fotoğraflarını al
       final photos = await FaceApiService.getUserPhotos(idNo);
-      
+
       // Orijinal fotoğrafları filtrele
-      final originalPhotos = photos.where((photo) => 
-        photo.contains('_original') || 
-        (photo.contains('.jpg') && !photo.contains('_aug'))
+      final originalPhotos = photos.where((photo) =>
+      photo.contains('_original') ||
+          (photo.contains('.jpg') && !photo.contains('_aug'))
       ).toList();
-      
+
       if (originalPhotos.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Orijinal fotoğraf bulunamadı')),
@@ -223,7 +223,7 @@ class _UsersPageState extends State<UsersPage> with WidgetsBindingObserver {
                   itemBuilder: (context, index) {
                     final photoName = originalPhotos[index];
                     final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$photoName';
-                    
+
                     return Column(
                       children: [
                         Expanded(
@@ -294,16 +294,16 @@ class _UsersPageState extends State<UsersPage> with WidgetsBindingObserver {
       try {
         // Orijinal fotoğrafın numarasını bul (örn: 1_original.jpg -> 1)
         final photoNumber = photoName.split('_')[0];
-        
+
         // Bu orijinal fotoğrafa ait tüm augmented fotoğrafları bul
-        final relatedPhotos = allPhotos.where((photo) => 
-          photo.startsWith('${photoNumber}_') || 
-          photo == photoName
+        final relatedPhotos = allPhotos.where((photo) =>
+        photo.startsWith('${photoNumber}_') ||
+            photo == photoName
         ).toList();
-        
+
         // API'ye silme isteği gönder
         final result = await FaceApiService.deleteUserPhotos(idNo, relatedPhotos);
-        
+
         if (result['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -365,11 +365,11 @@ class _UsersPageState extends State<UsersPage> with WidgetsBindingObserver {
         final photos = userPhotos[idNo] ?? [];
         // Orijinal fotoğrafı bul (1_original.jpg varsa onu kullan, yoksa ilk fotoğrafı)
         final originalPhoto = photos.firstWhere(
-          (photo) => photo.contains('_original'),
-          orElse: () => photos.isNotEmpty ? photos.first : '1.jpg'
+                (photo) => photo.contains('_original'),
+            orElse: () => photos.isNotEmpty ? photos.first : '1.jpg'
         );
         final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$originalPhoto';
-        
+
         print('👤 Kullanıcı: ${user['name']}');
         print('🆔 ID: $idNo');
         print('📸 Fotoğraflar: $photos');
@@ -444,8 +444,8 @@ class _UsersPageState extends State<UsersPage> with WidgetsBindingObserver {
         final photos = userPhotos[idNo] ?? [];
         // Orijinal fotoğrafı bul (1_original.jpg varsa onu kullan, yoksa ilk fotoğrafı)
         final originalPhoto = photos.firstWhere(
-          (photo) => photo.contains('_original'),
-          orElse: () => photos.isNotEmpty ? photos.first : '1.jpg'
+                (photo) => photo.contains('_original'),
+            orElse: () => photos.isNotEmpty ? photos.first : '1.jpg'
         );
         final photoUrl = '${FaceApiService.baseUrl}/user_photo/$idNo/$originalPhoto';
 

@@ -91,7 +91,7 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> with Widget
   Future<void> fetchRecognitionLogs(String? userId) async {
     try {
       print('🔍 fetchRecognitionLogs çağrıldı: userId = $userId');
-      
+
       if (userId == null) {
         // Tüm kullanıcıların loglarını çek
         print('📊 Tüm kullanıcıların recognition logs çekiliyor');
@@ -169,14 +169,14 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> with Widget
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: isStartDate 
+      initialDate: isStartDate
           ? (startDate ?? DateTime.now().subtract(Duration(days: 7)))
           : (endDate ?? DateTime.now()),
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
       locale: const Locale('tr', 'TR'), // 🎯 Türkçe tarih formatı - artık destekleniyor
     );
-    
+
     if (picked != null) {
       setState(() {
         if (isStartDate) {
@@ -193,7 +193,7 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> with Widget
           }
         }
       });
-      
+
       print('📅 ${isStartDate ? "Başlangıç" : "Bitiş"} tarihi seçildi: ${picked.day}/${picked.month}/${picked.year}');
     }
   }
@@ -237,7 +237,7 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> with Widget
         }
 
         DateTime logDate;
-        
+
         // 🎯 Farklı tarih formatlarını destekle
         if (dateString.contains('T')) {
           // ISO format: "2024-01-15T10:30:00"
@@ -282,7 +282,7 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> with Widget
         return false;
       }
     }).toList();
-    
+
     print('📅 Filtrelenmiş log sayısı: ${filteredLogs.length}');
     return filteredLogs;
   }
@@ -412,7 +412,7 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> with Widget
             setState(() {
               selectedUserId = value;
             });
-            
+
             // Kullanıcı seçildikten sonra logları çek
             await fetchRecognitionLogs(value);
           },
@@ -513,7 +513,7 @@ class _RecognitionQueryPageState extends State<RecognitionQueryPage> with Widget
               setState(() {
                 selectedUserId = value;
               });
-              
+
               // Kullanıcı seçildikten sonra logları çek
               await fetchRecognitionLogs(value);
             },

@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:camera/camera.dart';
 import '../services/face_api_services.dart';
 import '../services/connectivity_service.dart';
-import '../components.dart';
+import '../components/components.dart';
 import 'home_page.dart'; // Doğru home page import'u
 
 // Tarih formatı için özel input formatter
@@ -114,12 +114,6 @@ class _AddUserPageState extends State<AddUserPage> with WidgetsBindingObserver {
   }
 
   Future<void> _initCamera() async {
-    // Web platformunda mobil kamera başlatmayı atla
-    if (kIsWeb) {
-      print("Web platformunda mobil kamera başlatılmıyor");
-      return;
-    }
-
     cameras = await availableCameras();
     if (cameras != null && cameras!.isNotEmpty) {
       // Ön kamerayı bul
@@ -304,15 +298,6 @@ class _AddUserPageState extends State<AddUserPage> with WidgetsBindingObserver {
     });
   }
 
-  // Web'den gelen fotoğrafı işle
-  void _handleWebImageCapture(String imageData) {
-    print('Web kamera fotoğrafı alındı');
-    // Base64 string'i işle ve faceImages listesine ekle
-    // Bu kısım web desteği için geliştirilebilir
-    setState(() {
-      faceCount++;
-    });
-  }
 
   Future<void> _saveUser() async {
     // Set loading state
@@ -483,10 +468,6 @@ class _AddUserPageState extends State<AddUserPage> with WidgetsBindingObserver {
             builder: (context, constraints) {
               final isLandscape = constraints.maxWidth > constraints.maxHeight;
 
-              // Web platformunda kamera kontrolü
-              if (kIsWeb) {
-                return _buildWebLayout(constraints);
-              }
 
               return SingleChildScrollView(
                 child: isLandscape
@@ -498,130 +479,6 @@ class _AddUserPageState extends State<AddUserPage> with WidgetsBindingObserver {
         ));
   }
 
-  // Web platformunda layout
-  Widget _buildWebLayout(BoxConstraints constraints) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Form alanları
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              children: [
-                TextField(
-                  controller: nameController,
-                  focusNode: _nameFocusNode,
-                  decoration: InputDecoration(
-                    labelText: 'Ad Soyad',
-                    border: OutlineInputBorder(),
-                  ),
-                  textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => _idNoFocusNode.requestFocus(),
-                ),
-                SizedBox(height: 16),
-                TextField(
-                  controller: idNoController,
-                  focusNode: _idNoFocusNode,
-                  decoration: InputDecoration(
-                    labelText: 'Kimlik No',
-                    border: OutlineInputBorder(),
-                    counterText: '${idNoController.text.length}/11',
-                    helperText: '11 haneli kimlik numarası giriniz',
-                  ),
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.next,
-                  maxLength: 11,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(11),
-                  ],
-                  onChanged: (value) {
-                    setState(() {});
-                  },
-                  onSubmitted: (_) => _birthDateFocusNode.requestFocus(),
-                ),
-                SizedBox(height: 16),
-                TextField(
-                  controller: birthDateController,
-                  focusNode: _birthDateFocusNode,
-                  decoration: InputDecoration(
-                    labelText: 'Doğum Tarihi (YYYY-AA-GG)',
-                    border: OutlineInputBorder(),
-                    counterText: '${birthDateController.text.length}/10',
-                    helperText: 'Sadece rakamları girin',
-                  ),
-                  keyboardType: TextInputType.number,
-                  textInputAction: TextInputAction.done,
-                  maxLength: 10,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    _DateInputFormatter(),
-                  ],
-                  onChanged: (value) {
-                    setState(() {});
-                  },
-                  onSubmitted: (_) {
-                    _birthDateFocusNode.unfocus();
-                    FocusScope.of(context).unfocus();
-                  },
-                ),
-              ],
-            ),
-          ),
-          
-          // Web kamera widget'ı
-          Container(
-            margin: EdgeInsets.all(16),
-            child: WebCameraWidget(
-              onImageCaptured: (String imageData) {
-                _handleWebImageCapture(imageData);
-              },
-            ),
-          ),
-          
-          // Kaydet butonu
-          Container(
-            margin: EdgeInsets.all(16),
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isConnected ? _saveUser : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding: EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: isSaving
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(width: 8),
-                        Text('Kaydediliyor...'),
-                      ],
-                    )
-                  : Text(
-                      'Kullanıcıyı Kaydet',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildPortraitLayout(BoxConstraints constraints) {
     return Column(
@@ -948,15 +805,15 @@ class _AddUserPageState extends State<AddUserPage> with WidgetsBindingObserver {
                           print("Kaydet butonuna tıklandı (landscape)");
                           _saveUser();
                         },
-                                            style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all(Colors.teal),
-                      foregroundColor: MaterialStateProperty.all(Colors.white),
-                      padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
-                      elevation: MaterialStateProperty.all(4.0), // Sabit elevation
-                      shadowColor: MaterialStateProperty.all(Colors.black26), // Sabit gölge
-                      overlayColor: MaterialStateProperty.all(Colors.transparent), // Tıklama rengini şeffaf yap
-                      splashFactory: NoSplash.splashFactory, // Tıklama animasyonunu kaldır
-                    ),
+                        style: ButtonStyle(
+                          backgroundColor: MaterialStateProperty.all(Colors.teal),
+                          foregroundColor: MaterialStateProperty.all(Colors.white),
+                          padding: MaterialStateProperty.all(EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                          elevation: MaterialStateProperty.all(4.0), // Sabit elevation
+                          shadowColor: MaterialStateProperty.all(Colors.black26), // Sabit gölge
+                          overlayColor: MaterialStateProperty.all(Colors.transparent), // Tıklama rengini şeffaf yap
+                          splashFactory: NoSplash.splashFactory, // Tıklama animasyonunu kaldır
+                        ),
                         child: isSaving
                             ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,

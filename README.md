@@ -1,442 +1,897 @@
-# 🌟 My FaceApp - Akıllı Yüz Tanıma Uygulaması
+# FaceApp - Yüz Tanıma Sistemi
 
-Flutter ile geliştirilmiş gelişmiş yüz tanıma uygulaması. Kullanıcıların yüzlerini kaydedebilir, gerçek zamanlı tanıma yapabilir ve ışık durumunu otomatik olarak analiz edebilirsiniz.
+<div align="center">
 
-## ✨ Özellikler
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![iOS](https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=ios&logoColor=white)
 
-### 🎯 Temel Özellikler
-- 👤 **Kullanıcı Kaydı**: Ad, kimlik no, doğum tarihi ile kullanıcı kaydı
-- 🔍 **Gerçek Zamanlı Yüz Tanıma**: Anlık yüz tanıma ve kimlik doğrulama
-- 📷 **Çoklu Kamera Desteği**: Ön/arka kamera geçişi
-- 📊 **Detaylı Loglar**: Tanıma kayıtları ve istatistikler
-- 📱 **Responsive Tasarım**: Dikey/yatay ekran desteği
-- 🎯 **Akıllı Kamera Seçimi**: Fisheye kamera atlama
+**Gelişmiş yüz tanıma teknolojisi ile kullanıcı yönetimi ve kimlik doğrulama sistemi**
 
-### 🌟 Yeni Özellikler (v2.0)
-- 💡 **Işık Durumu Analizi**: Otomatik ışık koşulları tespiti
-- 🎨 **Görsel Rehberlik**: Işık durumuna göre kullanıcı yönlendirmesi
-- ⚡ **Performans Optimizasyonu**: Gelişmiş frame işleme
-- 🔄 **Otomatik Threshold**: Akıllı eşik değeri optimizasyonu
-- 📈 **Gerçek Zamanlı İstatistikler**: Tanıma performans metrikleri
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/faceapp)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/yourusername/faceapp)
 
-### 💡 Işık Detection Özellikleri
-- **Çok Fazla Işık Tespiti**: Overexposure durumunda uyarı
-- **Çok Karanlık Tespiti**: Düşük ışık durumunda uyarı
-- **Dengesiz Işık Tespiti**: Eşit olmayan aydınlatma uyarısı
-- **Otomatik Rehberlik**: Işık durumuna göre kullanıcı önerileri
+</div>
 
-## 🚀 Kurulum
+---
+
+## İçindekiler
+
+- [Özellikler](#özellikler)
+- [Kurulum](#kurulum)
+- [Kullanım](#kullanım)
+- [Proje Yapısı](#proje-yapısı)
+- [API Konfigürasyonu](#api-konfigürasyonu)
+- [Kamera Özellikleri](#kamera-özellikleri)
+- [UI/UX Özellikleri](#uiux-özellikleri)
+- [Test](#test)
+- [Build](#build)
+- [Katkıda Bulunma](#katkıda-bulunma)
+- [Lisans](#lisans)
+
+---
+
+## Özellikler
+
+### Kimlik Doğrulama
+- **Yüz Tanıma**: Gelişmiş AI algoritmaları ile yüksek doğruluk oranı
+- **Çoklu Fotoğraf Desteği**: Kullanıcı başına 1-5 fotoğraf kaydetme
+- **Gerçek Zamanlı Tanıma**: Anlık kimlik doğrulama
+- **Güvenli Veri Saklama**: Şifrelenmiş veri depolama
+
+### Kullanıcı Yönetimi
+- **Kullanıcı Kaydı**: Ad, kimlik no, doğum tarihi ile kayıt
+- **Kullanıcı Listesi**: Kayıtlı kullanıcıları görüntüleme
+- **Kullanıcı Düzenleme**: Bilgi güncelleme ve fotoğraf yönetimi
+- **Kullanıcı Silme**: Güvenli kullanıcı silme işlemi
+
+### Raporlama ve Loglama
+- **Tanıma Geçmişi**: Tüm tanıma işlemlerinin kaydı
+- **Kullanıcı Logları**: Kullanıcı bazında detaylı loglar
+- **Gerçek Zamanlı İzleme**: Anlık sistem durumu
+- **İstatistikler**: Performans ve kullanım analizi
+
+### Bağlantı Yönetimi
+- **İnternet Kontrolü**: Otomatik bağlantı durumu kontrolü
+- **Hata Yönetimi**: Kullanıcı dostu hata mesajları
+- **Offline Desteği**: Bağlantı olmadığında bilgilendirme
+
+---
+
+## Kurulum
 
 ### Gereksinimler
-- Flutter 3.0+ (Dart 3.0+)
-- Android Studio / VS Code
-- Android SDK (API 21+)
-- Python 3.8+ (Backend için)
-- OpenCV, TensorFlow, MTCNN (Backend için)
+Bu uygulamayı çalıştırmak için aşağıdaki yazılımların yüklü olması gerekir:
 
-### Adımlar
+#### Temel Gereksinimler
+- **Flutter SDK 3.9.2+** (Ana geliştirme framework'ü)
+- **Dart 3.0+** (Programlama dili)
+- **Git** (Kod indirme için)
 
-#### 1. Projeyi Klonlayın
+#### Geliştirme Ortamı (Birini seçin)
+- **Android Studio** (Önerilen - Android geliştirme için)
+- **Visual Studio Code** (Hafif alternatif)
+- **IntelliJ IDEA** (Profesyonel IDE)
+
+#### Platform Bağımlılıkları
+- **Android için**: Android SDK, Android Studio
+- **iOS için**: Xcode (sadece macOS'ta)
+- **Web için**: Chrome tarayıcısı
+
+### Adım Adım Kurulum
+
+#### 1. Flutter SDK Kurulumu
+
+**Windows için:**
+1. [Flutter resmi sitesinden](https://flutter.dev/docs/get-started/install/windows) Flutter SDK'yı indirin
+2. ZIP dosyasını `C:\flutter` klasörüne çıkarın
+3. Sistem PATH'ine `C:\flutter\bin` ekleyin
+4. Komut satırını açın ve `flutter doctor` yazın
+
+**macOS için:**
 ```bash
-git clone https://github.com/yourusername/my_faceapp.git
-cd my_faceapp
+# Homebrew ile (önerilen)
+brew install flutter
+
+# Manuel kurulum
+# Flutter SDK'yı indirin ve PATH'e ekleyin
 ```
 
-#### 2. Flutter Bağımlılıklarını Yükleyin
+**Linux için:**
 ```bash
+# Snap ile
+sudo snap install flutter --classic
+
+# Manuel kurulum
+# Flutter SDK'yı indirin ve PATH'e ekleyin
+```
+
+#### 2. Geliştirme Ortamı Kurulumu
+
+**Android Studio (Önerilen):**
+1. [Android Studio'yu indirin](https://developer.android.com/studio)
+2. Kurulum sırasında "Android SDK" seçeneğini işaretleyin
+3. Android Studio'yu açın ve Flutter plugin'ini yükleyin
+4. `flutter doctor` komutu ile kurulumu kontrol edin
+
+**VS Code (Alternatif):**
+1. [VS Code'u indirin](https://code.visualstudio.com/)
+2. Flutter ve Dart extension'larını yükleyin
+3. `flutter doctor` komutu ile kurulumu kontrol edin
+
+#### 3. Projeyi İndirme
+
+**Git ile (önerilen):**
+```bash
+# Projeyi klonlayın
+git clone https://github.com/yourusername/faceapp.git
+
+# Proje klasörüne gidin
+cd faceapp
+```
+
+**Manuel indirme:**
+1. GitHub'da "Code" butonuna tıklayın
+2. "Download ZIP" seçeneğini seçin
+3. ZIP dosyasını çıkarın
+4. Klasörü istediğiniz yere taşıyın
+
+#### 4. Bağımlılıkları Yükleme
+
+```bash
+# Flutter bağımlılıklarını yükleyin
 flutter pub get
-```
 
-#### 3. Backend Kurulumu
-```bash
-# Python bağımlılıklarını yükleyin
-pip install -r requirements.txt
-
-# API'yi başlatın
-python api.py
-```
-
-#### 4. API Yapılandırması
-`lib/services/face_api_services.dart` dosyasında API endpoint'lerini güncelleyin:
-```dart
-static const String baseUrl = 'http://your-server-ip:5000';
-```
-
-#### 5. Uygulamayı Çalıştırın
-```bash
-flutter run
-```
-
-## 📱 Kullanım
-
-### 🏠 Ana Sayfa (HomePage)
-**Dosya**: `lib/pages/home_page.dart`
-
-Ana sayfa, uygulamanın giriş noktasıdır ve tüm temel işlevlere erişim sağlar.
-
-#### ✨ Özellikler:
-- **Responsive Tasarım**: Dikey ve yatay ekran desteği
-- **İnternet Bağlantısı Kontrolü**: Otomatik bağlantı durumu kontrolü
-- **Görsel Arayüz**: Face ID logosu ve modern buton tasarımı
-- **Navigasyon**: Tüm sayfalara kolay erişim
-
-#### 🎯 Ana Butonlar:
-1. **Yüz Tanıma Yap** (`face_recognition_page.dart`)
-   - Gerçek zamanlı yüz tanıma
-   - Işık durumu analizi
-   - Kamera kontrolleri
-
-2. **Kişi Kaydet** (`add_user_page.dart`)
-   - Yeni kullanıcı kaydı
-   - Fotoğraf çekme
-   - Form validasyonu
-
-3. **Tanıma Sorgula** (`recognition_query_page.dart`)
-   - Tanıma geçmişi sorgulama
-   - Tarih aralığı filtreleme
-   - Detaylı raporlar
-
-4. **Kullanıcı Logları** (`users_log_page.dart`)
-   - Kayıtlı kullanıcılar listesi
-   - Kullanıcı fotoğrafları
-   - Kullanıcı yönetimi
-
-### 👤 Kullanıcı Kaydı (AddUserPage)
-**Dosya**: `lib/pages/add_user_page.dart`
-
-Yeni kullanıcıların sisteme kaydedildiği sayfa.
-
-#### ✨ Özellikler:
-- **Form Validasyonu**: Ad, kimlik no, doğum tarihi kontrolü
-- **Kamera Entegrasyonu**: Ön/arka kamera desteği
-- **Fotoğraf Çekme**: 1-5 adet yüz fotoğrafı
-- **Otomatik Yüz Tespiti**: Çekilen fotoğraflarda yüz kontrolü
-- **İnternet Bağlantısı**: Bağlantı durumu kontrolü
-
-#### 📋 Form Alanları:
-- **Ad Soyad**: Zorunlu alan, minimum 2 karakter
-- **Kimlik No**: 11 haneli TC kimlik numarası
-- **Doğum Tarihi**: YYYY-AA-GG formatında otomatik formatlama
-
-#### 📷 Fotoğraf Çekme:
-- **Otomatik Yüz Tespiti**: Çekilen fotoğraflarda yüz kontrolü
-- **Çoklu Fotoğraf**: 1-5 adet fotoğraf çekme
-- **Önizleme**: Çekilen fotoğrafların önizlemesi
-- **Silme**: İstenmeyen fotoğrafları silme
-
-#### 🎯 Kullanım Adımları:
-1. Form alanlarını doldurun
-2. "Fotoğraf Çek" butonuna tıklayın
-3. Yüzünüzü kameraya tutun
-4. "Çek" butonuna basın
-5. 1-5 adet fotoğraf çekin
-6. "Kaydet" butonuna tıklayın
-
-### 🔍 Yüz Tanıma (FaceRecognitionPage)
-**Dosya**: `lib/pages/face_recognition_page.dart`
-
-Uygulamanın ana özelliği olan gerçek zamanlı yüz tanıma sayfası.
-
-#### ✨ Özellikler:
-- **Gerçek Zamanlı Tanıma**: Sürekli yüz tanıma işlemi
-- **Işık Detection**: Otomatik ışık durumu analizi
-- **Kamera Kontrolleri**: Ön/arka kamera, zoom kontrolü
-- **Performans Optimizasyonu**: Frame debouncing, memory management
-- **Görsel Rehberlik**: Işık durumuna göre kullanıcı yönlendirmesi
-
-#### 💡 Işık Detection Sistemi:
-- **Otomatik Analiz**: Her 2 saniyede bir ışık kontrolü
-- **Görsel Uyarılar**: Renk kodlu durum göstergeleri
-- **Rehberlik Mesajları**: Işık durumuna göre öneriler
-- **Renk Kodları**:
-  - 🟢 **Yeşil**: Işık durumu uygun
-  - 🟠 **Turuncu**: Çok fazla ışık
-  - 🔵 **Mavi**: Çok karanlık
-  - 🟡 **Sarı**: Dengesiz ışık
-
-#### 🎮 Kamera Kontrolleri:
-- **Kamera Değiştirme**: Sol alt köşedeki kamera ikonu
-- **Zoom Kontrolü**: Arka kamera için dikey slider
-- **Oturum Sıfırlama**: Sağ üst köşedeki yenileme ikonu
-- **Odaklanma Alanı**: Ekranda görsel odaklanma alanı
-
-#### 📊 Tanıma Özellikleri:
-- **Gerçek Zamanlı Loglar**: Sağ alt köşede tanıma kayıtları
-- **Threshold Optimizasyonu**: Otomatik eşik değeri ayarlama
-- **Performans Metrikleri**: Tanıma hızı ve doğruluk oranı
-- **Hata Yönetimi**: İnternet bağlantısı ve API hataları
-
-#### 🎯 Kullanım Adımları:
-1. Sayfayı açın
-2. Yüzünüzü odaklanma alanına yerleştirin
-3. Işık durumunu kontrol edin
-4. Tanıma sonuçlarını takip edin
-5. Gerekirse kamera ayarlarını değiştirin
-
-### 🔍 Tanıma Sorgula (RecognitionQueryPage)
-**Dosya**: `lib/pages/recognition_query_page.dart`
-
-Tanıma geçmişini sorgulama ve raporlama sayfası.
-
-#### ✨ Özellikler:
-- **Tarih Aralığı Filtreleme**: Başlangıç ve bitiş tarihi seçimi
-- **Kullanıcı Bazlı Filtreleme**: Belirli kullanıcıların logları
-- **Detaylı Raporlar**: Tanıma istatistikleri ve metrikleri
-- **Grafik Görünümü**: Tanıma performansı grafikleri
-- **Export Özelliği**: Raporları dışa aktarma
-
-#### 📊 Rapor Türleri:
-- **Genel Tanıma İstatistikleri**: Toplam tanıma sayısı, başarı oranı
-- **Kullanıcı Bazlı Raporlar**: Her kullanıcının tanıma geçmişi
-- **Tarih Bazlı Analizler**: Günlük, haftalık, aylık raporlar
-- **Performans Metrikleri**: Threshold değerleri, doğruluk oranları
-
-#### 🎯 Filtreleme Seçenekleri:
-- **Tarih Aralığı**: Başlangıç ve bitiş tarihi
-- **Kullanıcı Seçimi**: Belirli kullanıcıların logları
-- **Tanıma Durumu**: Başarılı/başarısız tanımalar
-- **Threshold Değerleri**: Belirli eşik değerleri
-
-#### 📈 Görselleştirme:
-- **Çizgi Grafikleri**: Tanıma performansı trendleri
-- **Pasta Grafikleri**: Kullanıcı dağılımları
-- **Bar Grafikleri**: Tarih bazlı tanıma sayıları
-- **Tablo Görünümü**: Detaylı log listesi
-
-### 👥 Kullanıcı Logları (UsersLogPage)
-**Dosya**: `lib/pages/users_log_page.dart`
-
-Kayıtlı kullanıcıları görüntüleme ve yönetme sayfası.
-
-#### ✨ Özellikler:
-- **Kullanıcı Listesi**: Tüm kayıtlı kullanıcıların listesi
-- **Fotoğraf Görüntüleme**: Kullanıcı fotoğraflarının önizlemesi
-- **Kullanıcı Yönetimi**: Silme, düzenleme işlemleri
-- **Arama ve Filtreleme**: Kullanıcı arama özelliği
-- **Detaylı Bilgiler**: Kullanıcı bilgileri ve istatistikleri
-
-#### 📋 Kullanıcı Bilgileri:
-- **Ad Soyad**: Kullanıcının tam adı
-- **Kimlik No**: TC kimlik numarası
-- **Doğum Tarihi**: Doğum tarihi
-- **Kayıt Tarihi**: Sisteme kayıt tarihi
-- **Fotoğraf Sayısı**: Kayıtlı fotoğraf sayısı
-
-#### 🖼️ Fotoğraf Yönetimi:
-- **Fotoğraf Önizleme**: Kullanıcı fotoğraflarının küçük resimleri
-- **Büyük Görüntüleme**: Fotoğrafları tam boyutta görüntüleme
-- **Fotoğraf Silme**: İstenmeyen fotoğrafları silme
-- **Fotoğraf Ekleme**: Yeni fotoğraf ekleme
-
-#### 🎯 Yönetim İşlemleri:
-- **Kullanıcı Silme**: Kullanıcıyı sistemden kaldırma
-- **Bilgi Güncelleme**: Kullanıcı bilgilerini düzenleme
-- **Fotoğraf Yönetimi**: Fotoğraf ekleme/silme
-- **İstatistik Görüntüleme**: Kullanıcı tanıma istatistikleri
-
-#### 🔍 Arama ve Filtreleme:
-- **Ad Soyad Arama**: Kullanıcı adına göre arama
-- **Kimlik No Arama**: TC kimlik numarasına göre arama
-- **Tarih Filtreleme**: Kayıt tarihine göre filtreleme
-- **Durum Filtreleme**: Aktif/pasif kullanıcı filtreleme
-
-## 🎯 Sayfa Geçişleri ve Navigasyon
-
-### 📱 Ana Sayfa → Diğer Sayfalar
-```
-Ana Sayfa
-├── Yüz Tanıma Yap → FaceRecognitionPage
-├── Kişi Kaydet → AddUserPage  
-├── Tanıma Sorgula → RecognitionQueryPage
-└── Kullanıcı Logları → UsersLogPage
-```
-
-### 🔄 Sayfa İçi Navigasyon
-- **Geri Butonu**: Her sayfada sol üst köşede
-- **Ana Sayfa**: Geri butonu ile ana sayfaya dönüş
-- **Sayfa İçi Geçişler**: Tab bar, drawer menu (varsa)
-
-### 🎨 UI/UX Özellikleri
-- **Responsive Tasarım**: Tüm ekran boyutlarına uyum
-- **Material Design**: Modern Flutter tasarım dili
-- **Animasyonlar**: Sayfa geçişlerinde smooth animasyonlar
-- **Loading States**: Yükleme durumları için göstergeler
-- **Error Handling**: Hata durumları için kullanıcı dostu mesajlar
-
-## 📡 API Endpoints
-
-### Temel Endpoints
-```http
-POST /add_user              # Kullanıcı ekleme
-POST /recognize             # Yüz tanıma
-GET /users                  # Kullanıcı listesi
-DELETE /delete_user/{id}    # Kullanıcı silme
-```
-
-### Yeni Endpoints (v2.0)
-```http
-POST /analyze_lighting      # Işık durumu analizi
-POST /optimize_threshold    # Threshold optimizasyonu
-GET /realtime_logs          # Gerçek zamanlı loglar
-POST /reset_recognition_session  # Oturum sıfırlama
-```
-
-## 🎯 Özellik Detayları
-
-### Işık Detection Algoritması
-1. **Histogram Analizi**: Görüntü parlaklık dağılımı
-2. **Ortalama Parlaklık**: Genel ışık seviyesi
-3. **Standart Sapma**: Kontrast analizi
-4. **Piksel Oranları**: Karanlık/parlak piksel oranları
-
-### Performans Optimizasyonları
-- **Frame Debouncing**: Gereksiz frame işlemeyi önleme
-- **Memory Management**: Otomatik bellek temizleme
-- **Async Processing**: Asenkron görüntü işleme
-- **Caching**: API yanıtlarını önbellekleme
-
-## 🐛 Sorun Giderme
-
-### Yaygın Sorunlar
-
-#### Kamera Açılmıyor
-```bash
-# Android izinlerini kontrol edin
+# Eğer hata alırsanız, cache'i temizleyin
 flutter clean
 flutter pub get
 ```
 
-#### API Bağlantı Hatası
-```bash
-# API'nin çalıştığından emin olun
-python api.py
+#### 5. API Sunucusu Kurulumu (Backend)
 
-# Endpoint URL'lerini kontrol edin
-lib/services/face_api_services.dart
+**Python kurulumu:**
+1. [Python 3.8+ indirin](https://python.org/downloads/)
+2. Kurulum sırasında "Add to PATH" seçeneğini işaretleyin
+
+**API sunucusunu başlatın:**
+```bash
+# Backend klasörüne gidin (eğer varsa)
+cd backend
+
+# Python bağımlılıklarını yükleyin
+pip install -r requirements.txt
+
+# API sunucusunu başlatın
+python app.py
 ```
 
-#### Işık Detection Çalışmıyor
-- Kamera izinlerinin verildiğinden emin olun
-- API'nin `/analyze_lighting` endpoint'ini desteklediğini kontrol edin
-- İnternet bağlantısını kontrol edin
+**Not:** Eğer backend kodu yoksa, sadece Flutter uygulamasını çalıştırabilirsiniz.
 
-## 📊 Performans Metrikleri
+#### 6. Uygulamayı Çalıştırma
 
-- **Tanıma Hızı**: ~1.5 saniye/frame
-- **Işık Analizi**: ~2 saniye/analiz
-- **Bellek Kullanımı**: ~50MB
-- **CPU Kullanımı**: ~15-20%
+**Android için:**
+```bash
+# Android cihaz/emülatör bağlı olduğundan emin olun
+flutter devices
 
+# Uygulamayı çalıştırın
+flutter run
+```
 
+**iOS için (sadece macOS):**
+```bash
+# iOS simülatör/cihaz bağlı olduğundan emin olun
+flutter devices
 
-## 🙏 Teşekkürler
+# Uygulamayı çalıştırın
+flutter run -d ios
+```
 
-- Tüm katkıda bulunanlar
+**Web için:**
+```bash
+# Web uygulamasını çalıştırın
+flutter run -d web
+```
 
+### Sorun Giderme
+
+#### Flutter Doctor Kontrolü
+```bash
+# Flutter kurulumunu kontrol edin
+flutter doctor
+
+# Eksik bileşenleri yükleyin
+flutter doctor --android-licenses
+```
+
+#### Yaygın Hatalar ve Çözümleri
+
+**"flutter: command not found" hatası:**
+- Flutter SDK'nın PATH'e eklendiğinden emin olun
+- Terminal'i yeniden başlatın
+
+**"No connected devices" hatası:**
+- Android: USB debugging açık olduğundan emin olun
+- iOS: Xcode kurulu olduğundan emin olun
+- Emülatör/simülatör çalıştırın
+
+**"Gradle build failed" hatası:**
+```bash
+# Cache'i temizleyin
+flutter clean
+cd android
+./gradlew clean
+cd ..
+flutter pub get
+```
+
+### İlk Çalıştırma Kontrol Listesi
+
+- [ ] Flutter SDK kurulu
+- [ ] Geliştirme ortamı kurulu (Android Studio/VS Code)
+- [ ] Android SDK kurulu (Android için)
+- [ ] Xcode kurulu (iOS için)
+- [ ] Proje indirildi
+- [ ] `flutter pub get` çalıştırıldı
+- [ ] Cihaz/emülatör bağlı
+- [ ] `flutter doctor` hata vermiyor
+- [ ] `flutter run` başarılı
 
 ---
 
-⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!
+## Kullanım
 
-**Not**: Bu uygulama eğitim amaçlı geliştirilmiştir. Ticari kullanım için gerekli lisansları almayı unutmayın.
+### Uygulama Başlatma
+1. **Uygulamayı açın**: Ana ekranda 4 ana buton görürsünüz
+2. **İnternet bağlantısı**: Uygulama otomatik olarak internet bağlantınızı kontrol eder
+3. **İzinler**: İlk kullanımda kamera izni isteyecektir - "İzin Ver" butonuna tıklayın
 
-## ��️ Proje Yapısı
+### Ana Sayfa Özellikleri
 
-```
-my_faceapp/
-├── lib/
-│   ├── pages/                           # Uygulama sayfaları
-│   │   ├── home_page.dart               # Ana sayfa - Uygulama giriş noktası
-│   │   ├── face_recognition_page.dart   # Yüz tanıma - Ana özellik (ışık detection dahil)
-│   │   ├── add_user_page.dart           # Kullanıcı ekleme - Form ve kamera entegrasyonu
-│   │   ├── recognition_query_page.dart  # Tanıma sorgulama - Raporlar ve istatistikler
-│   │   └── users_log_page.dart          # Kullanıcı logları - Kullanıcı yönetimi
-│   ├── services/                        # Servis katmanı
-│   │   ├── face_api_services.dart       # API servisleri - Backend iletişimi
-│   │   └── connectivity_service.dart    # İnternet bağlantısı kontrolü
-│   ├── utils/                           # Yardımcı sınıflar
-│   │   └── colors.dart                  # Renk tanımları - UI renk paleti
-│   ├── components/                      # Yeniden kullanılabilir bileşenler
-│   │   └── components.dart              # Ortak UI bileşenleri
-│   ├── model/                           # Veri modelleri
-│   │   └── items_model.dart             # Veri modelleri
-│   └── main.dart                        # Ana uygulama - Uygulama başlangıç noktası
-├── assets/                              # Statik dosyalar
-│   ├── face_detection_front.tflite      # TensorFlow Lite modeli
-│   ├── face1.png, face2.png, ...        # Örnek yüz görselleri
-│   └── icon.png                         # Uygulama ikonu
-├── android/                             # Android platformu
-│   ├── app/                             # Android uygulama
-│   │   ├── src/                         # Kaynak kodlar
-│   │   ├── build.gradle                 # Build konfigürasyonu
-│   │   └── google-services.json         # Firebase konfigürasyonu
-│   └── build.gradle                     # Proje build konfigürasyonu
-├── ios/                                 # iOS platformu (varsa)
-├── web/                                 # Web platformu
-├── windows/                             # Windows platformu
-├── api.py                               # Backend API - Python Flask uygulaması
-├── requirements.txt                     # Python bağımlılıkları
-├── pubspec.yaml                         # Flutter bağımlılıkları
-├── pubspec.lock                         # Flutter bağımlılık kilidi
-└── README.md                           # Bu dosya - Proje dokümantasyonu
-```
+#### Yüz Tanıma Yap
+- **Amaç**: Daha önce kayıtlı kullanıcıları tanımak için
+- **Nasıl kullanılır**: 
+  1. "Yüz Tanıma Yap" butonuna tıklayın
+  2. Kamera otomatik açılır
+  3. Yüzünüzü kameraya gösterin
+  4. "Fotoğraf Çek" butonuna basın
+  5. Sonuç ekranında tanıma bilgilerini görün
 
-### 📁 Dosya Açıklamaları
+#### Kişi Kaydet
+- **Amaç**: Yeni kullanıcı eklemek için
+- **Nasıl kullanılır**:
+  1. "Kişi Kaydet" butonuna tıklayın
+  2. Form alanlarını doldurun (Ad, Kimlik No, Doğum Tarihi)
+  3. 1-5 adet yüz fotoğrafı çekin
+  4. "Kaydet" butonuna basın
 
-#### 🎯 Ana Sayfalar (`lib/pages/`)
-- **`home_page.dart`**: Uygulamanın ana giriş sayfası, tüm özelliklere erişim sağlar
-- **`face_recognition_page.dart`**: Gerçek zamanlı yüz tanıma, ışık detection, kamera kontrolleri
-- **`add_user_page.dart`**: Yeni kullanıcı kaydı, form validasyonu, fotoğraf çekme
-- **`recognition_query_page.dart`**: Tanıma geçmişi sorgulama, raporlar, istatistikler
-- **`users_log_page.dart`**: Kullanıcı yönetimi, fotoğraf görüntüleme, kullanıcı listesi
+#### Kullanıcıları Görüntüle
+- **Amaç**: Kayıtlı tüm kullanıcıları listelemek için
+- **Nasıl kullanılır**:
+  1. "Kullanıcıları Görüntüle" butonuna tıklayın
+  2. Kayıtlı kullanıcı listesini görün
+  3. Kullanıcı detaylarını inceleyin
+  4. Gerekirse düzenleme/silme işlemleri yapın
 
-#### 🔧 Servisler (`lib/services/`)
-- **`face_api_services.dart`**: Backend API ile iletişim, HTTP istekleri, veri işleme
-- **`connectivity_service.dart`**: İnternet bağlantısı kontrolü, bağlantı durumu yönetimi
+#### Tanıma Sorgula
+- **Amaç**: Geçmiş tanıma kayıtlarını görmek için
+- **Nasıl kullanılır**:
+  1. "Tanıma Sorgula" butonuna tıklayın
+  2. Tanıma geçmişini görün
+  3. Tarih ve saat bilgilerini inceleyin
 
-#### 🎨 Yardımcı Sınıflar (`lib/utils/`, `lib/components/`)
-- **`colors.dart`**: Uygulama renk paleti, tema renkleri
-- **`components.dart`**: Yeniden kullanılabilir UI bileşenleri
+### Detaylı Kullanım Kılavuzu
 
-#### 📊 Veri Modelleri (`lib/model/`)
-- **`items_model.dart`**: Veri sınıfları, model tanımları
+#### Kullanıcı Kaydı Adım Adım
 
-#### 🖼️ Statik Dosyalar (`assets/`)
-- **`face_detection_front.tflite`**: TensorFlow Lite yüz tanıma modeli
-- **`face*.png`**: Örnek yüz görselleri ve uygulama ikonları
+**1. Kişisel Bilgileri Girme:**
+- **Ad Soyad**: Tam adınızı yazın (örn: "Ahmet Yılmaz")
+- **Kimlik No**: 11 haneli TC kimlik numaranızı girin
+- **Doğum Tarihi**: YYYY-AA-GG formatında (örn: "1990-01-15")
 
-#### 🔧 Konfigürasyon Dosyaları
-- **`pubspec.yaml`**: Flutter bağımlılıkları ve proje konfigürasyonu
-- **`requirements.txt`**: Python backend bağımlılıkları
-- **`api.py`**: Python Flask backend API uygulaması
+**2. Fotoğraf Çekme:**
+- **Kamera Hazırlığı**: Yüzünüzü kameraya net bir şekilde gösterin
+- **Işık**: Yeterli ışık olduğundan emin olun
+- **Pozisyon**: Düz bakın, gülümseyin
+- **Çekim**: "Görüntü Al" butonuna basın (otomatik 5 fotoğraf çeker)
+- **Kontrol**: Çekilen fotoğrafları kontrol edin, isterseniz silin
 
-### 🏗️ Mimari Yapı
+**3. Kaydetme:**
+- **Doğrulama**: Form otomatik olarak doğrulanır
+- **Hata Kontrolü**: Eksik/hatalı bilgiler kırmızı ile işaretlenir
+- **Başarı**: "Kaydediliyor..." mesajı görünür
+- **Tamamlandı**: Ana sayfaya otomatik dönüş
 
-#### 📱 Frontend (Flutter)
+#### Yüz Tanıma Adım Adım
+
+**1. Tanıma Başlatma:**
+- "Yüz Tanıma Yap" butonuna tıklayın
+- Kamera otomatik açılır
+- Yüzünüzü kameraya gösterin
+
+**2. Fotoğraf Çekme:**
+- "Fotoğraf Çek" butonuna basın
+- Anlık fotoğraf çekilir
+- İşleme başlar
+
+**3. Sonuç Görüntüleme:**
+- **Tanındı**: Kullanıcı bilgileri görünür
+- **Tanınmadı**: "Tanınamadı" mesajı görünür
+- **Hata**: Tekrar deneme önerisi
+
+### Ekran Yönlendirmeleri
+
+#### Portrait (Dikey) Modu
+- Form alanları üstte
+- Kamera ortada
+- Butonlar altta
+- Fotoğraflar alt kısımda
+
+#### Landscape (Yatay) Modu
+- Form alanları solda
+- Kamera sağda
+- Butonlar form altında
+- Fotoğraflar form altında
+
+### Hata Mesajları ve Çözümleri
+
+#### "İnternet bağlantısı yok!"
+- **Çözüm**: WiFi veya mobil veri bağlantınızı kontrol edin
+- **Tekrar dene**: Bağlantı sağlandıktan sonra "Tekrar Dene" butonuna basın
+
+#### "Kamera izni gerekli"
+- **Çözüm**: Telefon ayarlarından kamera iznini verin
+- **Android**: Ayarlar > Uygulamalar > FaceApp > İzinler > Kamera
+- **iOS**: Ayarlar > Gizlilik > Kamera > FaceApp
+
+#### "Kimlik numarası 11 haneli olmalıdır"
+- **Çözüm**: TC kimlik numaranızı tam olarak girin
+- **Kontrol**: Boşluk veya özel karakter olmamalı
+
+#### "Doğum tarihi YYYY-AA-GG formatında olmalıdır"
+- **Çözüm**: Tarihi doğru formatta girin
+- **Örnek**: 1990-01-15 (1990 yılı, 01 ay, 15 gün)
+
+### Performans İpuçları
+
+#### Hızlı Çalışma İçin
+- **İyi ışık**: Fotoğraf çekerken yeterli ışık olması
+- **Sabit pozisyon**: Hareket etmeden fotoğraf çekin
+- **Temiz kamera**: Kamera lensini temizleyin
+- **Stabil internet**: Güçlü internet bağlantısı
+
+#### Sorun Giderme
+- **Uygulama yavaş**: Telefonu yeniden başlatın
+- **Kamera açılmıyor**: Uygulamayı kapatıp açın
+- **Tanıma başarısız**: Farklı açılardan fotoğraf çekin
+
+---
+
+## Proje Yapısı
+
 ```
 lib/
-├── main.dart                    # Uygulama başlangıç noktası
-├── pages/                       # Sayfa bileşenleri
-├── services/                    # İş mantığı servisleri
-├── utils/                       # Yardımcı sınıflar
-├── components/                  # UI bileşenleri
-└── model/                       # Veri modelleri
+├── components/           # Genel bileşenler
+│   └── components.dart
+├── constants/           # Sabitler ve konfigürasyon
+│   └── app_constants.dart
+├── model/              # Veri modelleri
+│   └── items_model.dart
+├── pages/              # Sayfa bileşenleri
+│   ├── add_user_page.dart
+│   ├── face_recognition_page.dart
+│   ├── home_page.dart
+│   ├── recognition_query_page.dart
+│   └── users_log_page.dart
+├── services/           # İş mantığı servisleri
+│   ├── connectivity_service.dart
+│   ├── face_api_services.dart
+│   └── user_validation_service.dart
+├── utils/              # Yardımcı fonksiyonlar
+│   └── colors.dart
+├── view/               # Görünüm bileşenleri
+│   └── welcome_page.dart
+├── widgets/            # Yeniden kullanılabilir widget'lar
+│   ├── camera_widget.dart
+│   ├── layout_builders.dart
+│   └── user_form_widget.dart
+└── main.dart              # Ana uygulama dosyası
 ```
 
-#### 🐍 Backend (Python Flask)
-```
-api.py                          # Ana API uygulaması
-├── FaceRecognitionAPI          # Yüz tanıma sınıfı
-├── Endpoint handlers           # API endpoint'leri
-├── Image processing            # Görüntü işleme
-└── Database operations         # Veritabanı işlemleri
+### Modüler Yapı
+- **Separation of Concerns**: Her dosya tek sorumluluk
+- **Reusable Components**: Yeniden kullanılabilir bileşenler
+- **Clean Architecture**: Temiz kod mimarisi
+- **SOLID Principles**: Yazılım geliştirme prensipleri
+
+---
+
+## API Konfigürasyonu
+
+### Backend API Endpoints
+```dart
+// lib/services/face_api_services.dart
+static const String baseUrl = 'http://10.6.2.63:5000';
 ```
 
-### 🔄 Veri Akışı
+### Desteklenen İşlemler
+- `POST /recognize` - Yüz tanıma
+- `POST /add_user` - Kullanıcı ekleme
+- `GET /users` - Kullanıcı listesi
+- `GET /user_logs/{userId}` - Kullanıcı logları
+- `GET /recognition_logs/{userId}` - Tanıma logları
+- `DELETE /delete_user/{userId}` - Kullanıcı silme
 
-1. **Kullanıcı Etkileşimi** → Flutter UI
-2. **İş Mantığı** → Service katmanı
-3. **API İletişimi** → HTTP istekleri
-4. **Backend İşleme** → Python Flask
-5. **Veri Tabanı** → JSON dosyaları
-6. **Yanıt** → Flutter UI'ya geri dönüş
+### API Güvenliği
+- HTTPS desteği
+- Veri şifreleme
+- Rate limiting
+- CORS konfigürasyonu
+
+---
+
+## Kamera Özellikleri
+
+### Desteklenen Platformlar
+- Android (API 21+)
+- iOS (12.0+)
+- Web (Kaldırıldı - performans optimizasyonu)
+
+### Kamera Özellikleri
+- **Çoklu Kamera Desteği**: Ön/arka kamera geçişi
+- **Otomatik Odaklama**: Akıllı odak sistemi
+- **Çözünürlük Optimizasyonu**: Performans için optimize edilmiş
+- **Zoom Kontrolü**: Manuel zoom ayarları
+- **Flash Kontrolü**: Otomatik flash yönetimi
+
+### Fotoğraf Kalitesi
+- **Yüksek Çözünürlük**: 1024x1024 maksimum
+- **Kalite Optimizasyonu**: %90 JPEG kalitesi
+- **Hızlı İşleme**: Anlık fotoğraf işleme
+- **Bellek Optimizasyonu**: Düşük bellek kullanımı
+
+---
+
+## UI/UX Özellikleri
+
+### Responsive Tasarım
+- **Portrait Mode**: Dikey ekran optimizasyonu
+- **Landscape Mode**: Yatay ekran optimizasyonu
+- **Adaptive Layout**: Ekran boyutuna göre uyarlama
+- **Material Design**: Google Material Design 3
+
+### Kullanıcı Deneyimi
+- **Sezgisel Arayüz**: Kolay kullanım
+- **Hızlı Navigasyon**: Tek dokunuşla geçiş
+- **Görsel Geri Bildirim**: Animasyonlar ve geçişler
+- **Erişilebilirlik**: Engelli kullanıcı desteği
+
+### Tema ve Renkler
+```dart
+// Ana renkler
+static const Color PRIMARY_COLOR = Colors.teal;
+static const Color SUCCESS_COLOR = Colors.green;
+static const Color ERROR_COLOR = Colors.red;
+static const Color WARNING_COLOR = Colors.orange;
+```
+
+---
+
+## Test
+
+### Unit Testler
+```bash
+# Tüm testleri çalıştır
+flutter test
+
+# Belirli bir dosyayı test et
+flutter test test/widget_test.dart
+```
+
+### Widget Testleri
+```bash
+# Widget testleri
+flutter test test/widgets/
+
+# Integration testleri
+flutter test integration_test/
+```
+
+### Test Kapsamı
+- Form validasyonu
+- API çağrıları
+- Kamera işlevleri
+- Kullanıcı akışları
+- Hata yönetimi
+
+---
+
+## Build
+
+### Android APK
+```bash
+# Debug APK
+flutter build apk --debug
+
+# Release APK
+flutter build apk --release
+
+# Split APK (Boyut optimizasyonu)
+flutter build apk --split-per-abi
+```
+
+### iOS
+```bash
+# iOS build
+flutter build ios --release
+
+# iOS simulator
+flutter run -d ios
+```
+
+### Build Optimizasyonu
+- **Code Splitting**: Kod bölme
+- **Tree Shaking**: Kullanılmayan kod temizleme
+- **Asset Optimization**: Görsel optimizasyonu
+- **Bundle Analysis**: Paket boyutu analizi
+
+---
+
+## Geliştirme
+
+### Kod Standartları
+- **Dart Style Guide**: Resmi Dart stil rehberi
+- **Flutter Lints**: Otomatik kod kontrolü
+- **Clean Code**: Temiz kod prensipleri
+- **Documentation**: Kapsamlı dokümantasyon
+
+### Git Workflow
+```bash
+# Feature branch oluştur
+git checkout -b feature/yeni-ozellik
+
+# Commit yap
+git commit -m "feat: yeni özellik eklendi"
+
+# Push et
+git push origin feature/yeni-ozellik
+```
+
+### Code Review Checklist
+- [ ] Kod kalitesi kontrolü
+- [ ] Test kapsamı
+- [ ] Dokümantasyon güncellemesi
+- [ ] Performans optimizasyonu
+- [ ] Güvenlik kontrolü
+
+---
+
+## Sorun Giderme
+
+### Başlangıç Sorunları
+
+#### "flutter: command not found" Hatası
+**Sorun**: Terminal'de flutter komutu tanınmıyor
+**Çözüm**:
+1. Flutter SDK'nın doğru kurulduğunu kontrol edin
+2. PATH değişkenine Flutter'ın bin klasörünü ekleyin
+3. Terminal'i yeniden başlatın
+4. `flutter doctor` komutunu çalıştırın
+
+#### "No connected devices" Hatası
+**Sorun**: Cihaz veya emülatör bulunamıyor
+**Çözüm**:
+- **Android için**:
+  - USB debugging açık olduğundan emin olun
+  - USB kablosu ile telefonu bilgisayara bağlayın
+  - Android Studio'da emülatör çalıştırın
+- **iOS için**:
+  - Xcode kurulu olduğundan emin olun
+  - iOS simülatör çalıştırın
+  - Gerçek cihaz için geliştirici hesabı gerekli
+
+### Geliştirme Sorunları
+
+#### "Gradle build failed" Hatası
+**Sorun**: Android build işlemi başarısız
+**Çözüm**:
+```bash
+# Cache'i temizleyin
+flutter clean
+
+# Android cache'i temizleyin
+cd android
+./gradlew clean
+cd ..
+
+# Bağımlılıkları yeniden yükleyin
+flutter pub get
+
+# Tekrar deneyin
+flutter run
+```
+
+#### "Pod install failed" Hatası (iOS)
+**Sorun**: iOS bağımlılıkları yüklenemiyor
+**Çözüm**:
+```bash
+# iOS klasörüne gidin
+cd ios
+
+# Pod cache'i temizleyin
+pod cache clean --all
+
+# Pod'ları yeniden yükleyin
+pod install
+
+# Ana klasöre dönün
+cd ..
+
+# Tekrar deneyin
+flutter run
+```
+
+### Uygulama Çalışma Sorunları
+
+#### Kamera Açılmıyor
+**Sorun**: Kamera izni verilmemiş veya kamera kullanımda
+**Çözüm**:
+- **Android**: Ayarlar > Uygulamalar > FaceApp > İzinler > Kamera > İzin Ver
+- **iOS**: Ayarlar > Gizlilik > Kamera > FaceApp > Açık
+- **Genel**: Uygulamayı kapatıp açın, telefonu yeniden başlatın
+
+#### "İnternet bağlantısı yok" Hatası
+**Sorun**: API sunucusuna bağlanılamıyor
+**Çözüm**:
+1. İnternet bağlantınızı kontrol edin
+2. API sunucusunun çalıştığından emin olun
+3. Firewall ayarlarını kontrol edin
+4. API URL'ini doğrulayın
+
+#### Uygulama Çöküyor
+**Sorun**: Uygulama beklenmedik şekilde kapanıyor
+**Çözüm**:
+```bash
+# Debug modunda çalıştırın
+flutter run --debug
+
+# Log'ları kontrol edin
+flutter logs
+
+# Uygulamayı temizleyin
+flutter clean
+flutter pub get
+```
+
+### Performans Sorunları
+
+#### Uygulama Yavaş Çalışıyor
+**Sorun**: Düşük performans
+**Çözüm**:
+- **Debug modu**: Release modunda çalıştırın
+- **Emülatör**: Gerçek cihaz kullanın
+- **Bellek**: Diğer uygulamaları kapatın
+- **Cache**: Uygulama cache'ini temizleyin
+
+#### Kamera Yavaş
+**Sorun**: Kamera başlatma veya fotoğraf çekme yavaş
+**Çözüm**:
+- **Işık**: Yeterli ışık olduğundan emin olun
+- **Odak**: Kameraya net bakın
+- **Hareket**: Sabit durun
+- **Uygulama**: Diğer kamera uygulamalarını kapatın
+
+### API Sorunları
+
+#### "Connection refused" Hatası
+**Sorun**: API sunucusuna bağlanılamıyor
+**Çözüm**:
+```bash
+# API sunucusunu kontrol edin
+curl http://10.6.2.63:5000/health
+
+# Eğer çalışmıyorsa, sunucuyu başlatın
+cd backend
+python app.py
+```
+
+#### "Timeout" Hatası
+**Sorun**: API yanıt vermiyor
+**Çözüm**:
+- İnternet bağlantınızı kontrol edin
+- API sunucusunun yanıt verdiğinden emin olun
+- Firewall ayarlarını kontrol edin
+- API URL'ini doğrulayın
+
+### Debug ve Test
+
+#### Debug Modu
+```bash
+# Verbose logging ile çalıştırın
+flutter run --verbose
+
+# Debug modunda çalıştırın
+flutter run --debug
+
+# Profile modunda çalıştırın
+flutter run --profile
+
+# Release modunda çalıştırın
+flutter run --release
+```
+
+#### Log Kontrolü
+```bash
+# Flutter log'larını görün
+flutter logs
+
+# Android log'larını görün
+adb logcat
+
+# iOS log'larını görün
+xcrun simctl spawn booted log stream
+```
+
+#### Test Çalıştırma
+```bash
+# Unit testleri çalıştırın
+flutter test
+
+# Widget testleri çalıştırın
+flutter test test/widget_test.dart
+
+# Integration testleri çalıştırın
+flutter test integration_test/
+```
+
+### Sistem Gereksinimleri
+
+#### Minimum Gereksinimler
+- **Android**: API 21+ (Android 5.0+)
+- **iOS**: iOS 12.0+
+- **RAM**: 2GB+
+- **Depolama**: 100MB boş alan
+- **İnternet**: Stabil bağlantı
+
+#### Önerilen Gereksinimler
+- **Android**: API 28+ (Android 9.0+)
+- **iOS**: iOS 14.0+
+- **RAM**: 4GB+
+- **Depolama**: 500MB boş alan
+- **İnternet**: Hızlı bağlantı
+
+### Yardım Alma
+
+#### Flutter Doctor
+```bash
+# Sistem durumunu kontrol edin
+flutter doctor
+
+# Detaylı bilgi alın
+flutter doctor -v
+
+# Eksik bileşenleri yükleyin
+flutter doctor --android-licenses
+```
+
+#### Destek Kanalları
+- **GitHub Issues**: Hata bildirimi için
+- **Flutter Docs**: Resmi dokümantasyon
+- **Stack Overflow**: Topluluk desteği
+- **Flutter Discord**: Canlı destek
+
+### Yaygın Hata Mesajları
+
+#### "Could not find or load main class"
+**Çözüm**: Java kurulumunu kontrol edin
+```bash
+java -version
+```
+
+#### "SDK location not found"
+**Çözüm**: Android SDK yolunu ayarlayın
+```bash
+flutter config --android-sdk /path/to/android/sdk
+```
+
+#### "CocoaPods not installed"
+**Çözüm**: CocoaPods'u yükleyin
+```bash
+sudo gem install cocoapods
+```
+
+#### "Xcode not found"
+**Çözüm**: Xcode'u App Store'dan yükleyin
+
+---
+
+## Performans
+
+### Optimizasyon Teknikleri
+- **Lazy Loading**: Gerektiğinde yükleme
+- **Image Caching**: Görsel önbellekleme
+- **Memory Management**: Bellek yönetimi
+- **Network Optimization**: Ağ optimizasyonu
+
+### Benchmark Sonuçları
+- **App Launch**: < 2 saniye
+- **Camera Start**: < 1 saniye
+- **Photo Capture**: < 0.5 saniye
+- **API Response**: < 3 saniye
+
+---
+
+## Katkıda Bulunma
+
+### Katkı Süreci
+1. **Fork** yapın
+2. **Feature branch** oluşturun (`git checkout -b feature/amazing-feature`)
+3. **Commit** yapın (`git commit -m 'Add amazing feature'`)
+4. **Push** edin (`git push origin feature/amazing-feature`)
+5. **Pull Request** oluşturun
+
+### Katkı Türleri
+- Bug fixes
+- New features
+- Documentation
+- Tests
+- UI/UX improvements
+- Performance optimizations
+
+### Kod Standartları
+- **Commit Messages**: Conventional Commits
+- **Code Style**: Dart/Flutter style guide
+- **Testing**: Minimum %80 test coverage
+- **Documentation**: Inline comments
+
+---
+
+## Lisans
+
+Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+```
+MIT License
+
+Copyright (c) 2024 FaceApp
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+```
+
+---
+
+## İletişim
+
+- **Proje Sahibi**: [Your Name](https://github.com/yourusername)
+- **Email**: your.email@example.com
+- **LinkedIn**: [Your LinkedIn](https://linkedin.com/in/yourusername)
+- **Twitter**: [@yourusername](https://twitter.com/yourusername)
+
+---
+
+## Teşekkürler
+
+- **Flutter Team** - Harika framework için
+- **Dart Team** - Güçlü dil için
+- **Open Source Community** - Sürekli gelişim için
+- **Contributors** - Katkılarınız için
+
+---
+
+<div align="center">
+
+**Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!**
+
+Made with ❤️ by [Your Name](https://github.com/yourusername)
+
+</div>

@@ -1,126 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:html' as html;
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
-import 'package:flutter/foundation.dart';
 
 class FaceApiService {
   static const String baseUrl = 'http://10.6.2.63:5000';// API adresini güncelle!
   /*static const String baseUrl = 'http://192.168.1.167:5000';*/
-  
-  // Web için kamera erişimi
-  static Future<html.MediaStream?> getWebCameraStream() async {
-    if (kIsWeb) {
-      try {
-        final stream = await html.window.navigator.mediaDevices?.getUserMedia({
-          'video': {
-            'width': {'ideal': 1280},
-            'height': {'ideal': 720},
-            'facingMode': 'user' // Ön kamera
-          }
-        });
-        return stream;
-      } catch (e) {
-        print('Web kamera erişim hatası: $e');
-        return null;
-      }
-    }
-    return null;
-  }
 
-  // Web için kamera izinlerini kontrol et
-  static Future<bool> checkWebCameraPermissions() async {
-    if (kIsWeb) {
-      try {
-        final stream = await html.window.navigator.mediaDevices?.getUserMedia({'video': true});
-        if (stream != null) {
-          stream.getTracks().forEach((track) => track.stop());
-          return true;
-        }
-      } catch (e) {
-        print('Web kamera izin hatası: $e');
-        return false;
-      }
-    }
-    return false;
-  }
-
-  // Web için kamera durumunu kontrol et
-  static Future<Map<String, dynamic>> getWebCameraStatus() async {
-    if (kIsWeb) {
-      try {
-        final devices = await html.window.navigator.mediaDevices?.enumerateDevices();
-        final videoDevices = devices?.where((device) => device.kind == 'videoinput').toList() ?? [];
-        
-        return {
-          'available': videoDevices.isNotEmpty,
-          'count': videoDevices.length,
-          'devices': videoDevices.map((d) => d.label).toList(),
-          'permissions': await checkWebCameraPermissions(),
-        };
-      } catch (e) {
-        return {
-          'available': false,
-          'error': e.toString(),
-        };
-      }
-    }
-    return {'available': false, 'platform': 'not_web'};
-  }
-
-  // Web için kamera izinlerini zorla
-  static Future<bool> requestWebCameraPermissions() async {
-    if (kIsWeb) {
-      try {
-        final stream = await html.window.navigator.mediaDevices?.getUserMedia({
-          'video': {
-            'width': {'ideal': 640},
-            'height': {'ideal': 480},
-            'facingMode': 'user'
-          }
-        });
-        
-        if (stream != null) {
-          // Stream'i hemen durdur
-          stream.getTracks().forEach((track) => track.stop());
-          return true;
-        }
-        return false;
-      } catch (e) {
-        print('Web kamera izin hatası: $e');
-        return false;
-      }
-    }
-    return false;
-  }
-
-  // Web için kamera test et
-  static Future<Map<String, dynamic>> testWebCamera() async {
-    if (kIsWeb) {
-      try {
-        final status = await getWebCameraStatus();
-        final permissions = await requestWebCameraPermissions();
-        
-        return {
-          'success': true,
-          'status': status,
-          'permissions_granted': permissions,
-          'message': permissions ? 'Kamera erişimi başarılı' : 'Kamera izinleri reddedildi',
-        };
-      } catch (e) {
-        return {
-          'success': false,
-          'error': e.toString(),
-          'message': 'Kamera test edilemedi',
-        };
-      }
-    }
-    return {
-      'success': false,
-      'message': 'Web platformu değil',
-    };
-  }
 
   static Future<Map<String, dynamic>> recognizeFace(File imageFile) async {
     final imageBase64 = await compressAndEncodeImage(imageFile);
@@ -470,16 +356,16 @@ class FaceApiService {
     try {
       print('🔄 updateUserName çağrıldı: userId=$userId, newName=$newName');
       print('🔗 API URL: $baseUrl/update_user_name/$userId');
-      
+
       final response = await http.put(
         Uri.parse('$baseUrl/update_user_name/$userId'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({'name': newName}),
       );
-      
+
       print('📡 API yanıt kodu: ${response.statusCode}');
       print('📄 API yanıtı: ${response.body}');
-      
+
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         print('✅ Başarılı güncelleme: $result');
@@ -503,13 +389,13 @@ class FaceApiService {
   static Future<Map<String, dynamic>> optimizeThreshold() async {
     try {
       print('🔧 Threshold optimizasyonu başlatılıyor...');
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/optimize_threshold'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({}),
       );
-      
+
       if (response.statusCode == 200) {
         final result = json.decode(response.body);
         print('✅ Threshold optimizasyonu tamamlandı: ${result['optimal_threshold']}');

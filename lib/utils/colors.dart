@@ -9,4 +9,3 @@ class MyColors {
   static const Color btnBorderColor = Color(0xFF60B9B7);
   static const Color backgroundColor = Color(0xFF9593a8);
 }
-

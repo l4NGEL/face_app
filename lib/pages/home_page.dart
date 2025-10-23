@@ -56,52 +56,6 @@ class _HomePageState extends State<HomePage> {
     navigation();
   }
 
-  // Web kamera test et
-  void _testWebCamera() async {
-    try {
-      final result = await FaceApiService.testWebCamera();
-      
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Web Kamera Test Sonucu'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Durum: ${result['message']}'),
-                if (result['success'] && result['status'] != null) ...[
-                  SizedBox(height: 8),
-                  Text('Kamera Sayısı: ${result['status']['count']}'),
-                  Text('İzinler: ${result['status']['permissions'] ? 'Verildi' : 'Verilmedi'}'),
-                ],
-                if (result['error'] != null) ...[
-                  SizedBox(height: 8),
-                  Text('Hata: ${result['error']}'),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Tamam'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Kamera test hatası: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -184,22 +138,11 @@ class _HomePageState extends State<HomePage> {
               width: constraints.maxWidth * 0.7,
             ),
 
-            // Web platformunda kamera test butonu
-            if (kIsWeb) ...[
-              SizedBox(height: constraints.maxHeight * 0.016),
-              _buildButton(
-                icon: Icons.camera_alt,
-                label: 'Web Kamera Test',
-                onPressed: () => _testWebCamera(),
-                width: constraints.maxWidth * 0.7,
-                backgroundColor: Colors.orange,
-              ),
-            ],
 
             SizedBox(height: constraints.maxHeight * 0.03),
           ],
         ),
-        
+
         // Çıkış butonu
         Positioned(
           top: 16,
@@ -239,7 +182,7 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 );
-                
+
                 if (confirmed == true) {
                   SystemNavigator.pop(); // Uygulamadan çıkış
                 }
@@ -379,7 +322,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
-        
+
         // Çıkış butonu (landscape)
         Positioned(
           top: 16,
@@ -419,7 +362,7 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 );
-                
+
                 if (confirmed == true) {
                   SystemNavigator.pop(); // Uygulamadan çıkış
                 }
