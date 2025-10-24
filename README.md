@@ -126,7 +126,7 @@ sudo snap install flutter --classic
 **Git ile (önerilen):**
 ```bash
 # Projeyi klonlayın
-git clone https://github.com/yourusername/faceapp.git
+git clone https://github.com/l4NGEL/face_app.git
 
 # Proje klasörüne gidin
 cd faceapp
